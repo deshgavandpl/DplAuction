@@ -945,13 +945,17 @@
         </div>
     </div>
 
-    <!-- Application Logic -->
-    <script>
+    <!-- Firebase Real-Time Integration Script -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
         // --- 1. Master State ---
         const state = {
             teams: { 'AP11': [], 'Cotton11': [], 'Balkrushna11': [], 'Ajinkya Classes11': [], 'Ankushraj11': [] },
             teamSpent: { 'AP11': 0, 'Cotton11': 0, 'Balkrushna11': 0, 'Ajinkya Classes11': 0, 'Ankushraj11': 0 },
-            teamPins: { 'AP11': '0718', 'Cotton11': '0719', 'Balkrushna11': '0720', 'Ajinkya Classes11': '0721', 'Ankushraj11': '0722' }, // Hardcoded sequential codes
+            teamPins: { 'AP11': '0718', 'Cotton11': '0719', 'Balkrushna11': '0720', 'Ajinkya Classes11': '0721', 'Ankushraj11': '0722' }, 
             unassigned: [], 
             registeredPlayers: [],
             allPlayers: [],
@@ -959,29 +963,26 @@
             selectedUnassignedPlayers: [],
             chartInitialized: false,
             
-            isAdmin: false, // For Master Panel UI features
-            userRole: 'viewer', // 'viewer', 'admin', or 'owner_TEAMNAME'
+            isAdmin: false, 
+            userRole: 'viewer', 
             
-            // Hardware Sync Configuration (The "Cinematic" Secret Sauce)
+            // Firebase Synchronized
             auction: {
-                status: 'waiting', // waiting, active, warning, sold
+                status: 'waiting',
                 playerIdx: 0,
                 currentBid: 20, 
                 highestBidder: null,
                 endTime: 0,
-                passedTeams: [], // Tracks teams that tapped "Pass"
-                isSessionActive: false, // Prevents owner login until admin starts it
-                loggedInOwners: [] // Tracks active war room connections
+                passedTeams: [], 
+                isSessionActive: false, 
+                loggedInOwners: [] 
             },
 
             liveScore: { team1: 'AP11', score1: '112/4 (8.2 ov)', team2: 'Cotton11', score2: 'Yet to bat', batter: 'Rahul D. *', bowler: 'Jasprit' }
         };
 
-        const AUCTION_SYNC_KEY = 'dpl_cinematic_auction_state';
         const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAbavuqyEW635Wu3Q193eMlpSvCUfstgQC_138bQLnfefaInalglXkQunVTdo2pb2F2A/exec';
-        const LIVE_SCORE_STORAGE_KEY = 'dpl_live_score';
 
-        // Team Configurations (Colors & UI info)
         const teamConfig = {
             'AP11': { name: 'AP11', glow: 'rgba(236, 72, 153, 0.6)', border: '#ec4899', grad: 'from-pink-500 to-orange-500', owner: 'Atish Palwe' },
             'Cotton11': { name: 'Cotton11', glow: 'rgba(6, 182, 212, 0.6)', border: '#06b6d4', grad: 'from-cyan-500 to-blue-500', owner: 'Bhagwat Dole' },
@@ -989,6 +990,94 @@
             'Ajinkya Classes11': { name: 'Ajinkya', glow: 'rgba(239, 68, 68, 0.6)', border: '#ef4444', grad: 'from-red-500 to-orange-500', owner: 'Ajinkya Dhakane Sir' },
             'Ankushraj11': { name: 'Ankushraj', glow: 'rgba(168, 85, 247, 0.6)', border: '#a855f7', grad: 'from-purple-500 to-pink-500', owner: 'Yogesh Huse Sir' }
         };
+
+        // --- Firebase Setup ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        if (Object.keys(firebaseConfig).length === 0) {
+            // Fake config so local testing doesn't throw errors
+            firebaseConfig.apiKey = "fake"; firebaseConfig.projectId = "fake";
+        }
+
+        let app, auth, db, isFirebaseReady = false;
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'dpl-central-app';
+        let auctionDocRef, teamsDocRef, liveScoreDocRef;
+
+        try {
+            app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+            
+            auctionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_auction_sync');
+            teamsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_teams_sync');
+            liveScoreDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_livescore_sync');
+        } catch (e) { console.error("Firebase init failed", e); }
+
+        async function initFirebase() {
+            if (!auth) return;
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                onAuthStateChanged(auth, (user) => {
+                    if (user && !isFirebaseReady) {
+                        isFirebaseReady = true;
+                        setupRealtimeListeners();
+                    }
+                });
+            } catch(e) { console.error("Auth error:", e); }
+        }
+
+        function setupRealtimeListeners() {
+            // 1. Sync Auction State
+            onSnapshot(auctionDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.auction = { ...state.auction, ...docSnap.data() };
+                } else {
+                    saveAuctionState(); // Create initial document if it doesn't exist
+                }
+                if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+                if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+            }, (error) => console.error("Auction sync error:", error));
+
+            // 2. Sync Teams & Spent State
+            onSnapshot(teamsDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    if (state.allPlayers.length === 0) { // Only override if we haven't loaded from sheets
+                        state.teams = data.teams || state.teams;
+                        state.teamSpent = data.teamSpent || state.teamSpent;
+                    }
+                    renderTeams();
+                    if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+                }
+            }, (error) => console.error("Teams sync error:", error));
+
+            // 3. Sync Live Score
+            onSnapshot(liveScoreDocRef, (docSnap) => {
+                if (docSnap.exists()) {
+                    state.liveScore = { ...state.liveScore, ...docSnap.data() };
+                    applyLiveScoreState();
+                }
+            }, (error) => console.error("Score sync error:", error));
+        }
+
+        function saveAuctionState() {
+            if (!isFirebaseReady) return;
+            setDoc(auctionDocRef, state.auction).catch(e => console.error(e));
+        }
+
+        function saveTeamsState() {
+            if (!isFirebaseReady) return;
+            setDoc(teamsDocRef, { teams: state.teams, teamSpent: state.teamSpent }).catch(e => console.error(e));
+        }
+
+        function saveLiveScoreState() {
+            if (!isFirebaseReady) return;
+            setDoc(liveScoreDocRef, state.liveScore).catch(e => console.error(e));
+        }
+
 
         // --- Utils & Core Data ---
         function formatName(str) {
@@ -1038,7 +1127,6 @@
             playersList.forEach(p => {
                 const teamName = p.team ? p.team.toString().trim() : 'Unassigned';
                 const formattedName = formatName(p.name);
-                // Clean up price to extract numeric value if needed
                 const priceVal = p.price ? parseInt(p.price.toString().replace(/[^0-9]/g, '')) || 20 : 20;
 
                 if (isUnassignedTeam(teamName)) {
@@ -1119,57 +1207,29 @@
                 if (!AudioContext) return;
                 const ctx = new AudioContext();
 
-                // Celebratory Chord (C Major Arpeggio)
                 const playNote = (freq, startTime, duration) => {
                     const osc = ctx.createOscillator();
                     const gain = ctx.createGain();
                     osc.type = 'triangle';
                     osc.frequency.value = freq;
-                    
                     gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.1); // Attack
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // Decay/Release
-                    
-                    osc.connect(gain);
-                    gain.connect(ctx.destination);
-                    osc.start(startTime);
-                    osc.stop(startTime + duration);
+                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.1); 
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); 
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(startTime); osc.stop(startTime + duration);
                 };
 
                 const now = ctx.currentTime;
-                // Play a quick satisfying "Ta-Da" chord
-                playNote(523.25, now, 0.5);       // C5
-                playNote(659.25, now + 0.1, 0.6); // E5
-                playNote(783.99, now + 0.2, 1.0); // G5
-                playNote(1046.50, now + 0.2, 1.2); // C6
+                playNote(523.25, now, 0.5);       
+                playNote(659.25, now + 0.1, 0.6); 
+                playNote(783.99, now + 0.2, 1.0); 
+                playNote(1046.50, now + 0.2, 1.2); 
 
             } catch (e) {
                 console.log('Audio playback blocked by browser interaction policy or not supported');
             }
         }
 
-        // --- 2. Live Sync Engine (LocalStorage mimicking WebSockets) ---
-        function loadAuctionState() {
-            try {
-                const savedAuction = localStorage.getItem(AUCTION_SYNC_KEY);
-                if (savedAuction) state.auction = JSON.parse(savedAuction);
-                if (!state.auction.loggedInOwners) state.auction.loggedInOwners = []; // Ensure array exists
-                
-                const savedTeams = localStorage.getItem('dpl_teams_state');
-                if (savedTeams) {
-                    const parsed = JSON.parse(savedTeams);
-                    if(state.allPlayers.length === 0) {
-                        state.teams = parsed.teams;
-                        state.teamSpent = parsed.teamSpent;
-                    }
-                }
-            } catch(e) { console.error(e); }
-        }
-
-        function saveAuctionState() {
-            localStorage.setItem(AUCTION_SYNC_KEY, JSON.stringify(state.auction));
-        }
-        
         function adminToggleSession() {
             state.auction.isSessionActive = !state.auction.isSessionActive;
             if (!state.auction.isSessionActive) {
@@ -1184,17 +1244,6 @@
                 showModal("Session Deactivated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🔒</span><h3 class='font-bold text-red-600 text-xl'>Auction Locked</h3><p class='text-slate-500 mt-2'>Owner logins are now blocked.</p></div>");
             }
         }
-
-        window.addEventListener('storage', (event) => {
-            if (event.key === AUCTION_SYNC_KEY || event.key === 'dpl_teams_state') {
-                loadAuctionState();
-                if(document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-            }
-            if (event.key === LIVE_SCORE_STORAGE_KEY) {
-                loadLiveScoreState();
-                applyLiveScoreState();
-            }
-        });
 
         // Loop for the progress bar - Highly Optimized using requestAnimationFrame (60 FPS)
         let animationFrameId = null;
@@ -1216,10 +1265,8 @@
                         bar.style.width = `${percentage}%`;
                     }
                 } else {
-                    // Ensure UI is cleared out if state changed
                     if (bar) bar.style.width = `100%`;
                 }
-                // Always poll smoothly without blocking the main thread
                 animationFrameId = requestAnimationFrame(update);
             }
             animationFrameId = requestAnimationFrame(update);
@@ -1230,7 +1277,6 @@
         function adminToggleAuctionStage() {
             if (state.unassigned.length === 0) return showModal("Draft Complete", "No players left in pool!");
             
-            // Check if all owners are logged in
             const requiredOwners = Object.keys(state.teams).length;
             const currentLogins = state.auction.loggedInOwners ? state.auction.loggedInOwners.length : 0;
             if (currentLogins < requiredOwners) {
@@ -1244,7 +1290,7 @@
             state.auction.status = 'active';
             state.auction.currentBid = 20;
             state.auction.highestBidder = null;
-            state.auction.passedTeams = []; // Reset passed teams for the new player
+            state.auction.passedTeams = []; 
             
             saveAuctionState();
             renderAuctionUI();
@@ -1270,7 +1316,6 @@
             if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
             if (!state.auction.passedTeams) state.auction.passedTeams = [];
             
-            // Mark team as passed
             if (!state.auction.passedTeams.includes(teamName)) {
                 state.auction.passedTeams.push(teamName);
                 saveAuctionState();
@@ -1280,7 +1325,6 @@
 
         function adminReviveTeam(teamName) {
             if (!state.auction.passedTeams) return;
-            // Remove team from passed list so they can bid again
             state.auction.passedTeams = state.auction.passedTeams.filter(t => t !== teamName);
             saveAuctionState();
             renderAuctionUI();
@@ -1289,7 +1333,7 @@
         function placeOwnerBid(teamName, amount = 10) {
             if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
             if (state.auction.highestBidder === teamName) return;
-            if (state.auction.passedTeams && state.auction.passedTeams.includes(teamName)) return; // Prevent bidding if passed
+            if (state.auction.passedTeams && state.auction.passedTeams.includes(teamName)) return; 
 
             const currentCount = state.teams[teamName] ? state.teams[teamName].length : 0;
             const spent = state.teamSpent[teamName] || 0;
@@ -1321,12 +1365,10 @@
             const player = state.unassigned[state.auction.playerIdx];
 
             if (team && player) {
-                // Optimistic update
                 if(!state.teams[team]) state.teams[team] = [];
                 state.teams[team].push(player.name);
                 state.teamSpent[team] = (state.teamSpent[team] || 0) + state.auction.currentBid;
 
-                // Sync to backend directly
                 try {
                     await assignPlayerToTeam(player, team, state.auction.currentBid);
                     syncDataFromGoogleSheets();
@@ -1334,31 +1376,86 @@
                     console.error("Backend assign error:", e);
                 }
             } else {
-                // Unsold/Pass logic - just advance
                 console.log("Player Unsold/Passed");
             }
 
             saveAuctionState();
-            localStorage.setItem('dpl_teams_state', JSON.stringify({ teams: state.teams, teamSpent: state.teamSpent }));
+            saveTeamsState();
             renderAuctionUI();
 
-            // Smooth transition to next player logic
             setTimeout(() => {
                 if(state.auction.status === 'sold' && state.userRole === 'admin') {
-                    // 1. Fade out current stage
                     const stage = document.getElementById('stage-active');
                     const stamp = document.getElementById('auction-sold-stamp');
                     if (stage) stage.classList.add('stage-transition-out');
-                    if (stamp) stamp.style.opacity = '0'; // Quickly hide stamp
+                    if (stamp) stamp.style.opacity = '0'; 
                     
                     setTimeout(() => {
-                        // 2. Clear out class and advance player
                         if (stage) stage.classList.remove('stage-transition-out');
                         state.auction.playerIdx = 0; 
                         adminToggleAuctionStage();
-                    }, 500); // Wait 500ms for fade out
+                    }, 500); 
                 }
-            }, 4500); // Trigger transition 4.5 seconds after sale
+            }, 4500); 
+        }
+
+        // --- Admin Functions added back ---
+        function adminNextPlayer() {
+            if (state.unassigned.length === 0) return;
+            state.auction.playerIdx++;
+            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
+            saveAuctionState();
+            renderAdminPanel();
+            renderAuctionUI();
+        }
+
+        async function adminAssignPlayer(index, teamName) {
+            const player = state.unassigned[index];
+            if (!player) return;
+            try {
+                const result = await assignPlayerToTeam(player, teamName, '$20');
+                if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
+                
+                await syncDataFromGoogleSheets();
+                renderAdminPanel();
+                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
+            } catch (error) {
+                showModal('Error', `<p class='text-center'>${error.message}</p>`);
+            }
+        }
+
+        function toggleUnassignedSelection(key, checked) {
+            if (checked && !state.selectedUnassignedPlayers.includes(key)) state.selectedUnassignedPlayers.push(key);
+            else state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(k => k !== key);
+            updateUnassignedSelectionUi();
+        }
+
+        function toggleSelectAllUnassigned(checked) {
+            state.selectedUnassignedPlayers = checked ? state.unassigned.map(getPlayerSelectionKey) : [];
+            renderAdminPanel();
+        }
+
+        function updateUnassignedSelectionUi() {
+            const btn = document.getElementById('admin-delete-selected-btn');
+            const chk = document.getElementById('admin-select-all-unassigned-checkbox');
+            const cnt = state.selectedUnassignedPlayers.length;
+            if(btn) { btn.disabled = cnt === 0; btn.innerText = cnt > 0 ? `Delete Selected (${cnt})` : 'Delete Selected'; }
+            if(chk) { chk.checked = cnt > 0 && cnt === state.unassigned.length; chk.indeterminate = cnt > 0 && cnt < state.unassigned.length; }
+        }
+
+        function confirmBulkDeleteUnassigned() {
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            if (selected.length === 0) return;
+            showModal('Delete Players', `<div class="space-y-4 text-center"><p class="font-bold text-red-600">${selected.length} players will be permanently deleted.</p><button onclick="bulkDeleteSelectedUnassigned()" class="w-full py-3 rounded-xl bg-red-600 text-white font-bold">Confirm</button></div>`);
+        }
+
+        async function bulkDeleteSelectedUnassigned() {
+            closeModal();
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            for (const p of selected) await removePlayerFromTeam(p, 'delete');
+            state.selectedUnassignedPlayers = [];
+            await syncDataFromGoogleSheets();
+            renderAdminPanel();
         }
 
         // --- 4. Render Logic ---
@@ -1411,7 +1508,6 @@
             const statusBadge = document.getElementById('auction-status-badge');
             if(!uiWait || !uiActive || !stamp) return;
 
-            // Trigger Sound Effect if status just changed to 'sold'
             if (state.auction.status === 'sold' && lastAuctionStatus !== 'sold') {
                 playSoldSound();
             }
@@ -1429,9 +1525,8 @@
                 if (p) {
                     const nameEl = document.getElementById('auction-player-name');
                     if (nameEl.innerText !== p.name && nameEl.innerText !== "---") {
-                        // New player loaded: Trigger slide up animation
                         uiActive.classList.remove('stage-transition-in');
-                        void uiActive.offsetWidth; // Trigger reflow
+                        void uiActive.offsetWidth; 
                         uiActive.classList.add('stage-transition-in');
 
                         nameEl.classList.add('glitch-text');
@@ -1459,7 +1554,6 @@
                     card.style.boxShadow = "none";
                 }
 
-                // Handle Warning/Timer UI
                 if (state.auction.status === 'warning') {
                     timerWrapper.classList.remove('hide');
                     statusBadge.innerText = "FINAL WARNING - BIDDING CLOSING";
@@ -1471,23 +1565,21 @@
                     statusBadge.classList.remove('bg-red-600', 'border-red-500', 'text-white');
                     statusBadge.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-300');
                     
-                    // Reset timer bar immediately to avoid visual glitching when switching states
                     const bar = document.getElementById('auction-timer-bar');
                     if (bar) bar.style.width = '100%';
                 }
 
-                // Handle Sold UI
                 if (state.auction.status === 'sold') {
                     stamp.classList.add('stamp-active');
                     if (state.auction.highestBidder) {
                         stamp.innerText = `SOLD TO ${teamConfig[state.auction.highestBidder].name.toUpperCase()}!`;
-                        stamp.style.color = "#10b981"; // Green color
+                        stamp.style.color = "#10b981"; 
                         stamp.style.borderColor = "#10b981";
-                        stamp.style.textShadow = "0 0 10px rgba(16, 185, 129, 0.5)"; // Reduced shadow for performance
+                        stamp.style.textShadow = "0 0 10px rgba(16, 185, 129, 0.5)"; 
                         stamp.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.3)";
                     } else {
                         stamp.innerText = "UNSOLD";
-                        stamp.style.color = "#ef4444"; // Red color
+                        stamp.style.color = "#ef4444"; 
                         stamp.style.borderColor = "#ef4444";
                         stamp.style.textShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
                         stamp.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.3)";
@@ -1497,7 +1589,6 @@
                 }
             }
 
-            // Render Tables
             const grid = document.getElementById('franchise-tables-grid');
             grid.innerHTML = '';
             
@@ -1543,7 +1634,6 @@
                          }
                      }
                 } else if (hasPassed && isActiveStage) {
-                    // Display for viewers if team is out
                     buttonHTML = `<div class="mt-4 text-xs font-bold text-red-500 uppercase tracking-widest">OUT</div>`;
                 }
 
@@ -1568,7 +1658,6 @@
             const sellBtn = document.getElementById('btn-admin-sell');
             if (state.userRole === 'admin') {
                 adminControls.classList.remove('hide');
-                // Update specific buttons based on state
                 if (sellBtn) {
                     if (state.auction.status === 'sold') {
                         sellBtn.innerText = "ALREADY SOLD/LOCKED";
@@ -1605,7 +1694,6 @@
             const totalEl = document.getElementById('admin-total-players');
             if (totalEl) totalEl.innerText = state.allPlayers.length || state.unassigned.length;
 
-            // Render PIN Grid Display
             const pinGrid = document.getElementById('admin-pin-display-grid');
             if (pinGrid) {
                 pinGrid.innerHTML = Object.keys(state.teamPins).map(team => `
@@ -1616,7 +1704,6 @@
                 `).join('');
             }
 
-            // Update Session Control UI
             const btnToggle = document.getElementById('btn-toggle-session');
             const statusText = document.getElementById('session-status-text');
             if(btnToggle && statusText) {
@@ -1703,28 +1790,6 @@
             }
         }
 
-        function adminNextPlayer() {
-            if (state.unassigned.length === 0) return;
-            state.auction.playerIdx++;
-            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
-            renderAdminPanel();
-        }
-
-        async function adminAssignPlayer(index, teamName) {
-            const player = state.unassigned[index];
-            if (!player) return;
-            try {
-                const result = await assignPlayerToTeam(player, teamName, '$20');
-                if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
-                
-                await syncDataFromGoogleSheets();
-                renderAdminPanel();
-                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
-            } catch (error) {
-                showModal('Error', `<p class='text-center'>${error.message}</p>`);
-            }
-        }
-
         function confirmAdminRemovePlayer(teamName, mobile, playerName) {
             const player = findPlayerRecord(teamName, mobile, playerName);
             if (!player) return showModal('Error', "Player not found. Sync data.");
@@ -1753,40 +1818,6 @@
             }
         }
 
-        function toggleUnassignedSelection(key, checked) {
-            if (checked && !state.selectedUnassignedPlayers.includes(key)) state.selectedUnassignedPlayers.push(key);
-            else state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(k => k !== key);
-            updateUnassignedSelectionUi();
-        }
-
-        function toggleSelectAllUnassigned(checked) {
-            state.selectedUnassignedPlayers = checked ? state.unassigned.map(getPlayerSelectionKey) : [];
-            renderAdminPanel();
-        }
-
-        function updateUnassignedSelectionUi() {
-            const btn = document.getElementById('admin-delete-selected-btn');
-            const chk = document.getElementById('admin-select-all-unassigned-checkbox');
-            const cnt = state.selectedUnassignedPlayers.length;
-            if(btn) { btn.disabled = cnt === 0; btn.innerText = cnt > 0 ? `Delete Selected (${cnt})` : 'Delete Selected'; }
-            if(chk) { chk.checked = cnt > 0 && cnt === state.unassigned.length; chk.indeterminate = cnt > 0 && cnt < state.unassigned.length; }
-        }
-
-        function confirmBulkDeleteUnassigned() {
-            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
-            if (selected.length === 0) return;
-            showModal('Delete Players', `<div class="space-y-4 text-center"><p class="font-bold text-red-600">${selected.length} players will be permanently deleted.</p><button onclick="bulkDeleteSelectedUnassigned()" class="w-full py-3 rounded-xl bg-red-600 text-white font-bold">Confirm</button></div>`);
-        }
-
-        async function bulkDeleteSelectedUnassigned() {
-            closeModal();
-            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
-            for (const p of selected) await removePlayerFromTeam(p, 'delete');
-            state.selectedUnassignedPlayers = [];
-            await syncDataFromGoogleSheets();
-            renderAdminPanel();
-        }
-
         function downloadPlayerDataCSV() {
             if (state.allPlayers.length === 0) return showModal("No Data", "No players to export.");
             const headers = ['Name', 'Mobile', 'Role', 'PIN', 'Team', 'Price'];
@@ -1796,12 +1827,6 @@
         }
 
         // --- Live Score & Chart ---
-        function loadLiveScoreState() {
-            const saved = localStorage.getItem(LIVE_SCORE_STORAGE_KEY);
-            if (saved) state.liveScore = { ...state.liveScore, ...JSON.parse(saved) };
-        }
-        function saveLiveScoreState() { localStorage.setItem(LIVE_SCORE_STORAGE_KEY, JSON.stringify(state.liveScore)); }
-        
         function applyLiveScoreState() {
             const map = { 'live-team-1': 'team1', 'live-score-1': 'score1', 'live-team-2': 'team2', 'live-score-2': 'score2', 'live-batter-1': 'batter', 'live-bowler': 'bowler', 'ls-team1': 'team1', 'ls-score1': 'score1', 'ls-team2': 'team2', 'ls-score2': 'score2', 'ls-batter1': 'batter', 'ls-bowler': 'bowler' };
             Object.keys(map).forEach(id => {
@@ -1890,7 +1915,7 @@
             document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => { if (el.dataset.target === viewId) el.classList.add('active'); else el.classList.remove('active'); });
             window.scrollTo(0, 0);
 
-            if (viewId === 'auction') { loadAuctionState(); renderAuctionUI(); startTimerLoop(); } else { if(animationFrameId) cancelAnimationFrame(animationFrameId); }
+            if (viewId === 'auction') { renderAuctionUI(); startTimerLoop(); } else { if(animationFrameId) cancelAnimationFrame(animationFrameId); }
             if (viewId === 'teams') renderTeams();
             if (viewId === 'stats' && !state.chartInitialized) renderChart();
             if (viewId === 'adminpanel') renderAdminPanel();
@@ -1948,10 +1973,41 @@
             if (isOpen) { nav.classList.remove('translate-x-full'); document.body.style.overflow = 'hidden'; } else { nav.classList.add('translate-x-full'); document.body.style.overflow = ''; }
         }
 
+        // Module exports to global window
+        window.navigateTo = navigateTo;
+        window.toggleMobileMenu = toggleMobileMenu;
+        window.switchInnerTab = switchInnerTab;
+        window.adminToggleAuctionStage = adminToggleAuctionStage;
+        window.adminGiveWarning = adminGiveWarning;
+        window.adminLockAndSell = adminLockAndSell;
+        window.placeOwnerBid = placeOwnerBid;
+        window.ownerPassBid = ownerPassBid;
+        window.adminReviveTeam = adminReviveTeam;
+        window.handleOwnerLogin = handleOwnerLogin;
+        window.handleAdminLogin = handleAdminLogin;
+        window.handleAdminLogout = handleAdminLogout;
+        window.switchAdminTab = switchAdminTab;
+        window.adminNextPlayer = adminNextPlayer;
+        window.adminAssignPlayer = adminAssignPlayer;
+        window.toggleUnassignedSelection = toggleUnassignedSelection;
+        window.toggleSelectAllUnassigned = toggleSelectAllUnassigned;
+        window.confirmAdminRemovePlayer = confirmAdminRemovePlayer;
+        window.adminRemovePlayerAction = adminRemovePlayerAction;
+        window.downloadPlayerDataCSV = downloadPlayerDataCSV;
+        window.forceScoreUpdate = forceScoreUpdate;
+        window.handleVillageChange = handleVillageChange;
+        window.handlePlayerRegistration = handlePlayerRegistration;
+        window.handlePlayerLogin = handlePlayerLogin;
+        window.handlePlayerLogout = handlePlayerLogout;
+        window.showTeamModal = showTeamModal;
+        window.closeModal = closeModal;
+        window.adminToggleSession = adminToggleSession;
+        window.adminResetCurrentAuction = adminResetCurrentAuction;
+        window.confirmBulkDeleteUnassigned = confirmBulkDeleteUnassigned;
+        window.bulkDeleteSelectedUnassigned = bulkDeleteSelectedUnassigned;
+
         // Init
-        loadAuctionState();
-        loadLiveScoreState();
-        applyLiveScoreState();
+        initFirebase();
         syncDataFromGoogleSheets();
         setInterval(syncDataFromGoogleSheets, 30000);
     </script>
