@@ -1,0 +1,1959 @@
+ <!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DPL Central | Professional Draft & League Operations</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            overflow-x: hidden;
+            overflow-y: scroll;
+        }
+
+        /* Clean UI Cards */
+        .clean-card {
+            background-color: #ffffff;
+            border-radius: 1.25rem;
+            border: 1px solid #f1f5f9;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .clean-card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
+            border-color: #e2e8f0;
+        }
+
+        /* --- Team Photos --- */
+        .team-card { min-height: 320px; }
+        .team-photo-wrap { width: 100%; display: flex; justify-content: center; align-items: flex-end; }
+        .team-photo-frame { width: min(100%, 210px); height: 220px; display: flex; justify-content: center; align-items: flex-end; overflow: hidden; }
+        .team-photo { width: auto; max-width: 100%; height: 100%; object-fit: contain; object-position: center bottom; display: block; filter: drop-shadow(0 14px 24px rgba(15, 23, 42, 0.18)); transition: transform 0.35s ease, filter 0.35s ease; }
+        .clean-card-hover:hover .team-photo { transform: translateY(-2px) scale(1.015); filter: drop-shadow(0 18px 30px rgba(15, 23, 42, 0.22)); }
+        
+        @media (max-width: 639px) {
+            .team-card { min-height: 300px; display: block; padding: 1.5rem; }
+            .team-card-copy { width: 58%; max-width: 58%; padding-top: 0.25rem; padding-bottom: 0; }
+            .team-photo-wrap { position: absolute; right: -0.75rem; bottom: 12%; width: 42%; justify-content: flex-end; align-items: flex-end; pointer-events: none; }
+            .team-photo-frame { width: 100%; max-width: 145px; height: 220px; justify-content: flex-end; align-items: flex-end; overflow: visible; }
+            .team-photo { width: auto; height: 100%; max-width: 100%; transform: translate(0, 0); }
+        }
+        @media (min-width: 640px) {
+            .team-card { min-height: 280px; }
+            .team-photo-wrap { width: auto; flex: 0 0 220px; justify-content: flex-end; }
+            .team-photo-frame { width: 220px; height: 250px; }
+        }
+
+        /* Buttons & Inputs */
+        .btn-primary { background-color: #2563eb; color: #ffffff; font-weight: 600; border-radius: 0.75rem; transition: all 0.2s ease; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-primary:hover { background-color: #1d4ed8; transform: translateY(-1px); }
+        .btn-secondary { background-color: #ffffff; color: #475569; font-weight: 600; border-radius: 0.75rem; border: 1px solid #cbd5e1; transition: all 0.2s ease; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+        .btn-secondary:hover { background-color: #f8fafc; color: #1e293b; border-color: #94a3b8; }
+        .clean-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem; background-color: #ffffff; transition: all 0.2s; }
+        .clean-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+
+        /* View Manager */
+        .app-view { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .app-view.active-view { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .hide { display: none !important; }
+
+        /* --- GEN-Z NAVIGATION STYLES --- */
+        .nav-link, .mobile-nav-link, .tab-btn {
+            position: relative; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; transition: all 0.2s ease; transform: skewX(-10deg); background-color: transparent; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; cursor: pointer;
+        }
+        .nav-link > span, .mobile-nav-link > span, .tab-btn > span { display: inline-flex; align-items: center; gap: 0.35rem; transform: skewX(10deg); }
+        .nav-link { padding: 0.35rem 1rem; font-size: 0.7rem; }
+        .nav-link:hover:not(.active) { background-color: #f1f5f9; color: #0f172a; border-color: #e2e8f0; }
+        .mobile-nav-link { padding: 1rem 2rem; font-size: 1.25rem; margin-bottom: 1rem; width: 80%; border-radius: 0.5rem; }
+        .mobile-nav-link:hover:not(.active) { background-color: rgba(255, 255, 255, 0.05); color: #00e5ff; }
+        .tab-btn { padding: 0.5rem 1.5rem; font-size: 0.8rem; margin-right: 0.5rem; }
+        .tab-btn:hover:not(.active) { background-color: #e2e8f0; color: #0f172a; }
+        .nav-link.active, .mobile-nav-link.active, .tab-btn.active {
+            background-image: linear-gradient(to right, #2563eb, #1e40af); color: #ffffff !important; border-color: #2563eb; box-shadow: 3px 3px 0px #00e5ff;
+        }
+
+        /* --- SPECIAL EFFECTS --- */
+        .live-dot { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; display: inline-block; animation: pulse-red 1.5s infinite; }
+        @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        
+        .hero-bg { background: url('image_0.jpg') center/cover no-repeat; }
+        .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, rgba(10, 25, 47, 0.95) 0%, rgba(10, 25, 47, 0.7) 100%); }
+        .hero-floating { animation: floating 4s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4)); }
+        .hero-glow-box { box-shadow: 0 0 50px rgba(212, 175, 55, 0.4), inset 0 0 20px rgba(212, 175, 55, 0.5); }
+        @keyframes floating { 0% { transform: translateY(0px) scale(1); } 50% { transform: translateY(-15px) scale(1.02); } 100% { transform: translateY(0px) scale(1); } }
+        
+        .energy-grid { background-size: 50px 50px; background-image: linear-gradient(to right, rgba(0, 229, 255, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 229, 255, 0.08) 1px, transparent 1px); }
+        .bg-animated-gradient { background-size: 200% 200%; animation: fastgradient 3s ease infinite; }
+        @keyframes fastgradient { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        .text-stroke-electric { -webkit-text-stroke: 1.5px #00e5ff; color: transparent; }
+        .lightning-hover:hover { box-shadow: 0 0 25px rgba(0, 229, 255, 0.4), inset 0 0 10px rgba(0, 229, 255, 0.2); border-color: #00e5ff; transform: translateY(-4px) scale(1.02); }
+
+        /* --- CINEMATIC AUCTION STYLES --- */
+        .auction-stage {
+            background: radial-gradient(circle at center, rgba(15, 23, 42, 0.9) 0%, rgba(2, 6, 23, 1) 100%);
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .auction-timer-container {
+            width: 100%; height: 8px; background: #1e293b; border-radius: 4px; overflow: hidden; position: relative;
+        }
+        .auction-timer-bar {
+            height: 100%; width: 100%; background: linear-gradient(90deg, #00e5ff, #3b82f6);
+            will-change: width; /* Optimized for smooth animation */
+        }
+        .timer-warning { background: linear-gradient(90deg, #ef4444, #f97316) !important; animation: pulse-red 0.5s infinite; }
+        
+        .franchise-table {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .franchise-table::before {
+            content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s ease;
+            background: inherit; filter: blur(20px); z-index: -1;
+        }
+        .franchise-table.active-bidder {
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 20px 40px -10px var(--team-glow);
+            border-color: var(--team-border) !important;
+            z-index: 20;
+        }
+        .franchise-table.active-bidder::before { opacity: 0.5; }
+
+        .glitch-text {
+            position: relative;
+            color: white;
+            animation: glitch 3s infinite;
+        }
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+            14% { text-shadow: 0.05em 0 0 rgba(255,0,0,0.75), -0.05em -0.025em 0 rgba(0,255,0,0.75), -0.025em 0.05em 0 rgba(0,0,255,0.75); }
+            15% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+            49% { text-shadow: -0.05em -0.025em 0 rgba(255,0,0,0.75), 0.025em 0.025em 0 rgba(0,255,0,0.75), -0.05em -0.05em 0 rgba(0,0,255,0.75); }
+            50% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+            99% { text-shadow: 0.025em 0.05em 0 rgba(255,0,0,0.75), 0.05em 0 0 rgba(0,255,0,0.75), 0 -0.05em 0 rgba(0,0,255,0.75); }
+            100% { text-shadow: -0.025em 0 0 rgba(255,0,0,0.75), -0.025em -0.025em 0 rgba(0,255,0,0.75), -0.025em -0.05em 0 rgba(0,0,255,0.75); }
+        }
+
+        /* --- NEW: Smooth Transitions for Auction Stage --- */
+        .stage-transition-out {
+            opacity: 0 !important;
+            transform: translateY(-20px) !important;
+            transition: all 0.5s ease-in-out !important;
+        }
+        .stage-transition-in {
+            animation: slideUpFade 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes slideUpFade {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        .sold-stamp {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(2) rotate(-10deg);
+            opacity: 0; pointer-events: none; z-index: 50;
+            font-size: 2.5rem; /* Browser friendly & crisp */
+            font-weight: 900; color: #10b981; text-transform: uppercase;
+            border: 4px solid #10b981; padding: 0.5rem 1.5rem; border-radius: 1rem;
+            text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); 
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.3);
+            white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+            will-change: transform, opacity; /* Optimized for smooth animation */
+        }
+        @media (min-width: 640px) {
+            .sold-stamp { font-size: 4rem; border-width: 6px; padding: 0.5rem 2rem; }
+        }
+        .sold-stamp.stamp-active {
+            animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes stampIn {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(2) rotate(-10deg); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(0.9) rotate(-10deg); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1) rotate(-10deg); }
+        }
+
+    </style>
+</head>
+
+<body class="antialiased selection:bg-blue-100 selection:text-blue-900 flex flex-col min-h-screen">
+
+    <!-- Top Navbar -->
+    <nav class="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50 px-4 md:px-6 py-3 shadow-sm">
+        <div class="max-w-[1400px] mx-auto flex justify-between items-center">
+            <!-- GEN-Z LOGO -->
+            <div class="relative cursor-pointer flex items-center gap-3 group" onclick="navigateTo('home')">
+                <div class="relative w-10 h-10 flex items-center justify-center transform group-hover:scale-105 transition-all duration-300">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37] to-blue-600 opacity-60 blur group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div class="relative w-full h-full bg-[#0a192f] border border-[#D4AF37]/50 flex items-center justify-center shadow-inner">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-br from-[#D4AF37] to-yellow-200 font-black italic text-xl">D</span>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1.5 transform -skew-x-6">
+                    <span class="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 uppercase tracking-tighter leading-none">DPL</span>
+                    <span class="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-[0.65rem] font-bold px-2 py-0.5 uppercase tracking-widest leading-none shadow-sm shadow-blue-500/30 rounded-sm">Central</span>
+                </div>
+            </div>
+
+            <!-- Desktop Nav -->
+            <div class="hidden lg:flex items-center gap-1.5">
+                <button onclick="navigateTo('home')" class="nav-link active" data-target="home"><span>Home</span></button>
+                <button onclick="navigateTo('league')" class="nav-link" data-target="league"><span>League</span></button>
+                <button onclick="navigateTo('teams')" class="nav-link" data-target="teams"><span>Teams</span></button>
+                <button onclick="navigateTo('auction')" class="nav-link" data-target="auction"><span>Live Bidding</span></button>
+                <button onclick="navigateTo('live')" class="nav-link" data-target="live"><span><span class="live-dot w-2 h-2"></span> Live</span></button>
+                <button onclick="navigateTo('stats')" class="nav-link" data-target="stats"><span>Stats</span></button>
+                <button onclick="navigateTo('media')" class="nav-link" data-target="media"><span>Media</span></button>
+                <button onclick="navigateTo('hub')" class="nav-link" data-target="hub"><span>Hub</span></button>
+            </div>
+
+            <button onclick="navigateTo('admin')" class="hidden md:flex btn-secondary px-5 py-2 text-xs text-slate-600 rounded-lg font-black uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 transform -skew-x-6"><span class="mr-1 inline-block transform skew-x-6">🔒 Portals</span></button>
+
+            <!-- Mobile Menu Toggle -->
+            <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none">
+                <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+        </div>
+    </nav>
+
+    <!-- MOBILE NAVIGATION OVERLAY -->
+    <div id="mobile-nav" class="fixed inset-0 bg-[#0a192f]/98 backdrop-blur-xl z-[100] transform translate-x-full transition-transform duration-300 flex flex-col items-center justify-center lg:hidden">
+        <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-white/70 hover:text-[#00e5ff] p-2 transition-colors"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
+        <div class="flex flex-col gap-4 text-center w-full px-6 overflow-y-auto max-h-screen py-20 items-center">
+            <button onclick="navigateTo('home')" class="mobile-nav-link active" data-target="home"><span>Home</span></button>
+            <button onclick="navigateTo('league')" class="mobile-nav-link" data-target="league"><span>League</span></button>
+            <button onclick="navigateTo('teams')" class="mobile-nav-link" data-target="teams"><span>Teams</span></button>
+            <button onclick="navigateTo('auction')" class="mobile-nav-link" data-target="auction"><span>Live Bidding</span></button>
+            <button onclick="navigateTo('live')" class="mobile-nav-link" data-target="live"><span><span class="live-dot w-3 h-3"></span> Live Score</span></button>
+            <button onclick="navigateTo('stats')" class="mobile-nav-link" data-target="stats"><span>Stats</span></button>
+            <button onclick="navigateTo('media')" class="mobile-nav-link" data-target="media"><span>Media</span></button>
+            <button onclick="navigateTo('hub')" class="mobile-nav-link" data-target="hub"><span>Player Hub</span></button>
+            <div class="h-px w-1/2 mx-auto bg-slate-800 my-4"></div>
+            <button onclick="navigateTo('admin')" class="w-4/5 mx-auto py-3.5 rounded-lg bg-red-600/10 border border-red-500/30 text-xl font-black text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"><span class="inline-block transform skew-x-6">🔒 Portals</span></button>
+        </div>
+    </div>
+
+    <!-- MAIN APP CONTAINER -->
+    <main class="flex-grow w-full max-w-[1400px] mx-auto p-4 md:p-6 lg:p-8">
+
+        <!-- ========================================== -->
+        <!-- VIEW: HOME                                 -->
+        <!-- ========================================== -->
+        <div id="view-home" class="app-view active-view">
+            <div class="clean-card hero-bg bg-slate-950 mb-8 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-8 md:gap-12 shadow-[0_20px_50px_rgba(0,0,0,0.3)] min-h-[80vh] lg:min-h-[calc(100vh-100px)] !border-0 rounded-3xl group">
+                <div class="absolute inset-0 energy-grid opacity-30 group-hover:opacity-60 transition-opacity duration-700 pointer-events-none z-0 transform scale-110"></div>
+                <div class="absolute -top-32 -left-32 w-96 h-96 bg-blue-600/10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+                <div class="absolute bottom-0 right-1/2 w-[500px] h-[500px] bg-[#00e5ff]/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
+                <div class="hero-overlay pointer-events-none z-0 !bg-gradient-to-r !from-slate-950/70 !via-slate-900/35 !to-slate-900/0"></div>
+                
+                <div class="relative z-10 max-w-xl w-full p-6 sm:p-8 md:p-12 lg:p-16">
+                    <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase mb-6 sm:mb-8 transform -skew-x-12 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                        <span class="animate-pulse">⚡</span> High-Voltage T10 Cricket
+                    </div>
+                    <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 sm:mb-6 leading-[0.9] tracking-tighter uppercase transform -skew-x-6">
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 drop-shadow-lg">Deshgavhan</span><br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-[#00e5ff] via-blue-500 to-purple-600 bg-animated-gradient drop-shadow-[0_0_20px_rgba(0,229,255,0.4)] block mt-2 sm:mt-3">Premier</span>
+                        <span class="text-stroke-electric block mt-1 sm:mt-2 tracking-wider">League</span>
+                    </h1>
+                    <p class="text-slate-300 text-base sm:text-lg md:text-xl mb-8 sm:mb-10 font-medium leading-relaxed border-l-4 border-[#00e5ff] pl-4 sm:pl-5 bg-gradient-to-r from-slate-900/50 to-transparent py-2">
+                        Cricket's ultimate battleground. Feel the surge. Witness the lightning pace, the unmatched passion, and the glory.
+                    </p>
+                    <div class="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-5">
+                        <button onclick="navigateTo('hub')" class="w-full sm:w-auto px-6 sm:px-8 py-4 rounded-xl bg-gradient-to-r from-[#00e5ff] to-blue-600 text-slate-950 font-black italic uppercase tracking-wider hover:from-cyan-400 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transform hover:-translate-y-1 hover:scale-105 skew-x-[0deg] sm:skew-x-[-8deg]"><span class="block transform sm:skew-x-[8deg]">⚡ Enter the Draft</span></button>
+                        <button onclick="navigateTo('auction')" class="w-full sm:w-auto px-6 sm:px-8 py-4 rounded-xl bg-transparent border-2 border-[#00e5ff]/50 text-[#00e5ff] font-black italic uppercase tracking-wider hover:bg-[#00e5ff]/10 hover:border-[#00e5ff] transition-all transform hover:-translate-y-1 hover:scale-105 skew-x-[0deg] sm:skew-x-[-8deg] shadow-[inset_0_0_20px_rgba(0,229,255,0)] hover:shadow-[inset_0_0_20px_rgba(0,229,255,0.2)]"><span class="block transform sm:skew-x-[8deg]">🔴 Live Bidding</span></button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Highlights -->
+            <div class="grid lg:grid-cols-3 gap-8 mb-8">
+                <div class="lg:col-span-2 clean-card p-4 sm:p-6 bg-slate-900 border-slate-800 shadow-xl relative overflow-hidden group">
+                    <div class="absolute inset-0 energy-grid opacity-20 pointer-events-none"></div>
+                    <h2 class="text-lg font-black italic text-white mb-5 border-b border-slate-700 pb-2 uppercase tracking-wide flex items-center gap-2">
+                        <span class="text-[#00e5ff]">⚡</span> Pulse Check</h2>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 relative z-10">
+                        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center lightning-hover transition-all">
+                            <div class="text-3xl mb-2 drop-shadow-md">👑</div>
+                            <h3 class="font-bold text-amber-400 text-xs tracking-widest uppercase">Top Player (AI)</h3>
+                            <p class="text-xl font-black italic text-white mt-1 transform -skew-x-6">Rahul D.</p>
+                        </div>
+                        <div class="bg-[#0a192f] rounded-xl p-4 border border-[#00e5ff]/30 text-center text-white relative lightning-hover transition-all shadow-[inset_0_0_20px_rgba(0,229,255,0.05)]">
+                            <span class="absolute top-3 right-3 live-dot"></span>
+                            <div class="text-[10px] text-[#00e5ff] font-black uppercase tracking-widest mb-1 bg-[#00e5ff]/10 inline-block px-2 py-0.5 rounded-full">
+                                Live Match</div>
+                            <h3 class="font-bold text-sm text-slate-300 mt-1">AP11 vs Cotton11</h3>
+                            <p class="text-3xl font-black text-white mt-1 transform -skew-x-6 tracking-tighter">112<span class="text-xl text-[#00e5ff]">/4</span></p>
+                            <span class="text-xs font-medium text-slate-400 block mt-1">(8.2 ov)</span>
+                        </div>
+                        <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 text-center lightning-hover transition-all">
+                            <div class="text-3xl mb-2 drop-shadow-md">🛡️</div>
+                            <h3 class="font-bold text-blue-400 text-xs tracking-widest uppercase">Top Team</h3>
+                            <p class="text-xl font-black italic text-white mt-1 transform -skew-x-6">AP11</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="clean-card p-6 flex flex-col justify-between border-slate-200">
+                    <h2 class="text-lg font-black italic text-slate-900 mb-4 border-b border-slate-100 pb-2 uppercase tracking-wide">Quick Jump</h2>
+                    <div class="space-y-3">
+                        <button onclick="navigateTo('auction')" class="w-full text-left p-3.5 rounded-xl hover:bg-[#00e5ff]/5 border border-slate-100 hover:border-[#00e5ff]/50 flex items-center justify-between group transition-all">
+                            <span class="font-black italic text-slate-700 group-hover:text-blue-600 transform group-hover:-skew-x-6 transition-transform">🔨 Live Auction Desk</span>
+                            <span class="text-slate-400 group-hover:text-[#00e5ff] group-hover:translate-x-2 transition-all font-bold">→</span>
+                        </button>
+                        <button onclick="navigateTo('stats')" class="w-full text-left p-3.5 rounded-xl hover:bg-[#00e5ff]/5 border border-slate-100 hover:border-[#00e5ff]/50 flex items-center justify-between group transition-all">
+                            <span class="font-black italic text-slate-700 group-hover:text-blue-600 transform group-hover:-skew-x-6 transition-transform">📊 Player Stats</span>
+                            <span class="text-slate-400 group-hover:text-[#00e5ff] group-hover:translate-x-2 transition-all font-bold">→</span>
+                        </button>
+                        <button onclick="navigateTo('media')" class="w-full text-left p-3.5 rounded-xl hover:bg-[#00e5ff]/5 border border-slate-100 hover:border-[#00e5ff]/50 flex items-center justify-between group transition-all">
+                            <span class="font-black italic text-slate-700 group-hover:text-blue-600 transform group-hover:-skew-x-6 transition-transform">📸 Action Gallery</span>
+                            <span class="text-slate-400 group-hover:text-[#00e5ff] group-hover:translate-x-2 transition-all font-bold">→</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: LEAGUE                               -->
+        <!-- ========================================== -->
+        <div id="view-league" class="app-view">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">League Information</h1>
+            <div class="clean-card overflow-hidden">
+                <div class="flex gap-4 p-4 bg-slate-50/80 border-b border-slate-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                    <button onclick="switchInnerTab('league', 'about')" id="tab-league-about" class="tab-btn active shrink-0"><span>What is DPL</span></button>
+                    <button onclick="switchInnerTab('league', 'history')" id="tab-league-history" class="tab-btn shrink-0"><span>History / Seasons</span></button>
+                    <button onclick="switchInnerTab('league', 'rules')" id="tab-league-rules" class="tab-btn shrink-0"><span>Structure & Rules</span></button>
+                </div>
+                <div class="p-6 sm:p-8">
+                    <div id="content-league-about" class="block">
+                        <h2 class="text-2xl font-bold mb-4">About the League</h2>
+                        <p class="text-slate-600 mb-6 leading-relaxed">The Deshgavhan Premier League is a community-driven, highly competitive cricket tournament aimed at discovering and showcasing local talent. Operating on a professional franchise model.</p>
+                    </div>
+                    <div id="content-league-history" class="hide">
+                        <h2 class="text-2xl font-bold mb-6">Tournament History</h2>
+                        <div class="space-y-4">
+                            <div class="p-4 border border-slate-100 rounded-xl bg-slate-50">
+                                <h3 class="font-bold text-blue-600">Season 1</h3>
+                                <p class="text-sm text-slate-600 mt-1">The inaugural season that started it all. <span class="font-bold text-slate-900">Winners: AP11</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="content-league-rules" class="hide">
+                        <h2 class="text-2xl font-bold mb-6">Structure & Rules</h2>
+                        <ul class="space-y-4 text-slate-700">
+                            <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">1.</span><div><strong>Match Format:</strong> Strictly T6 (6 Overs per inning). 60-minute match duration.</div></li>
+                            <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">2.</span><div><strong>Player Eligibility:</strong> <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-sm font-bold ml-1">MUST BE DESHGAVHAN DOMICILE</span>. Outside players are strictly prohibited.</div></li>
+                            <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">3.</span><div><strong>Auction:</strong> All teams have an equal virtual purse. Base prices determined by committee.</div></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: TEAMS & PLAYERS                      -->
+        <!-- ========================================== -->
+        <div id="view-teams" class="app-view">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">Official Franchises</h1>
+            <p class="text-slate-500 mb-8">Click a team to view their roster.</p>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12" id="teams-grid"></div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: CINEMATIC LIVE AUCTION               -->
+        <!-- ========================================== -->
+        <div id="view-auction" class="app-view">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+                <div>
+                    <h1 class="text-3xl sm:text-4xl font-black text-slate-900 italic transform -skew-x-6 uppercase tracking-tight flex items-center gap-3">🔴 Live Draft Desk</h1>
+                    <p class="text-slate-500 mt-1 font-medium tracking-wide" id="auction-user-status">View-Only Mode | Real-Time Sync Active</p>
+                </div>
+                <!-- Admin Override Controls (Hidden by Default) -->
+                <div id="auction-admin-controls" class="hide flex gap-2 flex-wrap justify-end">
+                    <button onclick="adminToggleAuctionStage()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">Next Player</button>
+                    <button onclick="adminGiveWarning()" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning (5s)</button>
+                    <button onclick="adminLockAndSell()" id="btn-admin-sell" class="btn-primary py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase text-xs shadow-lg shadow-red-600/30">Lock & Sell</button>
+                </div>
+            </div>
+
+            <!-- THE CINEMATIC STAGE -->
+            <div class="auction-stage rounded-3xl p-6 sm:p-10 mb-8 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center min-h-[50vh]">
+                <div class="absolute inset-0 energy-grid opacity-20 pointer-events-none z-0"></div>
+                
+                <!-- SOLD STAMP ANIMATION -->
+                <div id="auction-sold-stamp" class="sold-stamp">SOLD!</div>
+
+                <!-- Stage: Waiting -->
+                <div id="stage-waiting" class="relative z-10 text-center w-full transition-opacity duration-300">
+                    <span class="text-6xl sm:text-8xl mb-6 block opacity-50 drop-shadow-lg">⏳</span>
+                    <h2 class="text-3xl sm:text-5xl font-black italic text-slate-600 uppercase tracking-widest">Waiting for Admin...</h2>
+                    <p class="text-slate-500 mt-4 text-lg">Next player will arrive on the block shortly.</p>
+                </div>
+
+                <!-- Stage: Active Bidding -->
+                <div id="stage-active" class="hide relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center justify-center text-center transition-opacity duration-300">
+                    
+                    <div class="absolute top-0 right-0 p-4 opacity-5 text-8xl md:text-[150px] pointer-events-none">👤</div>
+
+                    <div id="auction-status-badge" class="inline-block px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs sm:text-sm font-bold tracking-[0.2em] uppercase mb-4 sm:mb-6 transition-colors">
+                        Player On Block
+                    </div>
+
+                    <!-- Player Name (Glitch effect applied on new load) -->
+                    <h2 id="auction-player-name" class="text-5xl sm:text-7xl md:text-8xl font-black text-white italic transform -skew-x-6 tracking-tighter mb-2 drop-shadow-2xl">---</h2>
+                    <p id="auction-player-role" class="text-xl sm:text-2xl font-bold text-blue-400 tracking-widest uppercase mb-8 sm:mb-12">---</p>
+
+                    <!-- Central Bid Display -->
+                    <div class="w-full max-w-lg mx-auto bg-slate-900/80 backdrop-blur-md rounded-3xl border-2 border-slate-700 p-6 sm:p-8 mb-8 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-800/50 to-transparent pointer-events-none"></div>
+                        <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Current Bid</p>
+                        <div id="auction-current-bid" class="text-6xl sm:text-8xl font-black text-white tracking-tighter font-mono transition-colors duration-300">$20</div>
+                        <div class="mt-4 pt-4 border-t border-slate-700/50">
+                            <p class="text-xs text-slate-500 uppercase tracking-widest mb-1">Highest Bidder</p>
+                            <p id="auction-highest-bidder" class="text-xl font-bold text-slate-300 italic">None (Base Price)</p>
+                        </div>
+                    </div>
+
+                    <!-- Timer Bar (Only visible during Warning) -->
+                    <div id="auction-timer-wrapper" class="w-full max-w-2xl mx-auto hide">
+                        <div class="flex justify-between text-xs font-bold text-red-400 mb-2 uppercase tracking-widest animate-pulse">
+                            <span>Final Warning</span>
+                            <span id="auction-time-text" class="text-white font-mono text-sm">5.0s</span>
+                        </div>
+                        <div class="auction-timer-container border border-red-700/50 shadow-inner bg-red-900/20">
+                            <div id="auction-timer-bar" class="auction-timer-bar w-full !bg-gradient-to-r !from-red-500 !to-orange-500"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- THE FRANCHISE TABLES (Bidding Controls) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mt-8" id="franchise-tables-grid">
+                <!-- Generated by JS -->
+            </div>
+
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: LIVE SCORE                           -->
+        <!-- ========================================== -->
+        <div id="view-live" class="app-view">
+            <div class="flex items-center gap-3 mb-6">
+                <span class="live-dot"></span>
+                <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Live Match Center</h1>
+            </div>
+
+            <div class="clean-card bg-slate-900 text-white p-6 md:p-10 mb-8 border-slate-800 shadow-2xl">
+                <div class="flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
+                    <!-- Team 1 -->
+                    <div class="text-center w-full md:w-1/3">
+                        <h2 id="live-team-1" class="text-xl md:text-2xl font-bold text-slate-300">AP11</h2>
+                        <div class="text-5xl md:text-7xl font-black text-emerald-400 tracking-tighter mt-2" id="live-score-1">112<span class="text-3xl md:text-4xl text-emerald-200">/4</span></div>
+                        <p class="text-slate-400 mt-2 font-mono" id="live-overs-1">Overs: 8.2 / 10</p>
+                    </div>
+
+                    <!-- VS -->
+                    <div class="text-slate-500 font-black text-xl sm:text-2xl italic">VS</div>
+
+                    <!-- Team 2 -->
+                    <div class="text-center w-full md:w-1/3">
+                        <h2 id="live-team-2" class="text-xl md:text-2xl font-bold text-slate-300">Cotton11</h2>
+                        <div id="live-score-2" class="text-2xl sm:text-3xl font-bold text-slate-500 mt-2 sm:mt-4">Yet to bat</div>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-700 mt-6 sm:mt-8 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                    <div>
+                        <p class="text-slate-400 uppercase tracking-widest text-xs mb-2">Current Batters</p>
+                        <div class="flex justify-between font-bold"><span id="live-batter-1" class="text-white">Rahul D. *</span> <span class="text-amber-400">42 (18)</span></div>
+                    </div>
+                    <div class="border-t border-slate-800 pt-4 sm:border-0 sm:pt-0">
+                        <p class="text-slate-400 uppercase tracking-widest text-xs mb-2">Current Bowler</p>
+                        <div class="flex justify-between font-bold"><span id="live-bowler" class="text-white">Jasprit</span> <span class="text-blue-400">2-18 (1.2)</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: STATS DASHBOARD                      -->
+        <!-- ========================================== -->
+        <div id="view-stats" class="app-view">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">Stats Dashboard 📊</h1>
+            <div class="grid lg:grid-cols-3 gap-6 mb-8">
+                <!-- AI Ranking -->
+                <div class="clean-card p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
+                    <h2 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">🧠 AI Player Ranking</h2>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-50 mb-3 flex items-center gap-4">
+                        <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-600 shrink-0">#1</div>
+                        <div class="truncate">
+                            <p class="font-bold text-slate-900 truncate">Ratan Huse</p>
+                            <p class="text-xs text-slate-500">Form Rating: 99/100</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Leaderboard Bat -->
+                <div class="clean-card p-0 overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-slate-700">Top Batsmen</div>
+                    <ul class="divide-y divide-slate-100 text-sm">
+                        <li class="p-4 flex justify-between items-center"><span class="font-medium">1. Ratan Huse</span><span class="font-bold text-blue-600">412 Runs</span></li>
+                        <li class="p-4 flex justify-between items-center"><span class="font-medium">2. Deepak Karad</span><span class="font-bold text-blue-600">385 Runs</span></li>
+                    </ul>
+                </div>
+
+                <!-- Leaderboard Bowl -->
+                <div class="clean-card p-0 overflow-hidden">
+                    <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-slate-700">Top Bowlers</div>
+                    <ul class="divide-y divide-slate-100 text-sm">
+                        <li class="p-4 flex justify-between items-center"><span class="font-medium">1. Gajanan Devare</span><span class="font-bold text-emerald-600">24 Wkts</span></li>
+                        <li class="p-4 flex justify-between items-center"><span class="font-medium">2. Rushikesh</span><span class="font-bold text-emerald-600">21 Wkts</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="clean-card p-4 sm:p-6 overflow-hidden">
+                <h2 class="text-lg font-bold text-slate-900 mb-6">Tournament Scoring Trends</h2>
+                <div class="chart-container overflow-x-auto w-full">
+                    <div class="min-w-[400px] h-[300px]"><canvas id="statsChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: MEDIA                                -->
+        <!-- ========================================== -->
+        <div id="view-media" class="app-view">
+            <h1 class="text-3xl font-bold text-slate-900 mb-6">Media Center</h1>
+            <div class="grid md:grid-cols-2 gap-8">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">Latest News</h2>
+                    <div class="space-y-4">
+                        <div class="clean-card p-4 hover:bg-slate-50 cursor-pointer">
+                            <span class="text-xs font-bold text-blue-600 uppercase">Announcement</span>
+                            <h3 class="font-bold text-slate-900 mt-1">Season 5 Auction Dates Confirmed</h3>
+                            <p class="text-sm text-slate-500 mt-2">The management has officially announced the auction for the 15th of November.</p>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="text-xl font-bold text-slate-900 mb-4 border-b border-slate-200 pb-2">Action Gallery</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="clean-card aspect-square bg-slate-800 flex items-center justify-center text-4xl text-white opacity-90 hover:opacity-100 cursor-pointer">🏆</div>
+                        <div class="clean-card aspect-square bg-slate-800 flex items-center justify-center text-4xl text-white opacity-90 hover:opacity-100 cursor-pointer">🏏</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: PLAYER HUB                           -->
+        <!-- ========================================== -->
+        <div id="view-hub" class="app-view">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-3xl font-bold text-slate-900">Player Hub</h1>
+            </div>
+
+            <div class="clean-card overflow-hidden max-w-4xl mx-auto shadow-2xl border-slate-200 bg-white">
+                <!-- Selection Screen -->
+                <div id="content-hub-selection" class="block p-4 sm:p-6 md:p-10">
+                    <div class="text-center mb-8 sm:mb-10">
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-900 uppercase tracking-tight transform -skew-x-6 mb-2">Welcome to the Draft</h2>
+                        <p class="text-slate-500 font-medium">Select an option to proceed to the secure portal.</p>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-6 max-w-3xl mx-auto">
+                        <div onclick="switchInnerTab('hub', 'reg')" class="clean-card p-6 sm:p-8 cursor-pointer relative overflow-hidden group bg-[#0a192f] border border-[#D4AF37]/30 hover:border-[#D4AF37] transition-all transform hover:-translate-y-2 text-center flex flex-col items-center justify-center min-h-[250px]">
+                            <span class="text-5xl sm:text-6xl mb-4 sm:mb-5 transform group-hover:scale-110 transition-transform">📝</span>
+                            <h3 class="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 transform -skew-x-6 mb-2 tracking-wide uppercase">New Player</h3>
+                            <p class="text-slate-400 text-sm font-medium">Join the Deshgavhan Draft</p>
+                        </div>
+                        <div onclick="switchInnerTab('hub', 'login')" class="clean-card p-6 sm:p-8 cursor-pointer relative overflow-hidden group bg-[#0a192f] border border-blue-500/30 hover:border-blue-500 transition-all transform hover:-translate-y-2 text-center flex flex-col items-center justify-center min-h-[250px]">
+                            <span class="text-5xl sm:text-6xl mb-4 sm:mb-5 transform group-hover:scale-110 transition-transform">🔐</span>
+                            <h3 class="text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 transform -skew-x-6 mb-2 tracking-wide uppercase">Existing Player</h3>
+                            <p class="text-slate-400 text-sm font-medium">Access Your Dashboard</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-4 sm:p-6 md:p-10 relative">
+                    <!-- Reg Form -->
+                    <div id="content-hub-reg" class="hide max-w-md mx-auto">
+                        <button onclick="switchInnerTab('hub', 'selection')" class="text-sm font-bold text-slate-400 hover:text-slate-700 mb-6 flex items-center gap-1 transition-colors">← Back to Options</button>
+                        <form id="player-reg-form" onsubmit="handlePlayerRegistration(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">1. Village/City</label>
+                                <select id="reg-village" onchange="handleVillageChange(this)" required class="clean-input appearance-none bg-slate-50 w-full">
+                                    <option value="">Select Village...</option>
+                                    <option value="Deshgavhan">Deshgavhan</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div><label class="block text-sm font-medium text-slate-700 mb-1">Full Name</label><input type="text" id="reg-name" required class="clean-input bg-slate-50 w-full"></div>
+                            <div><label class="block text-sm font-medium text-slate-700 mb-1">Mobile Number</label><input type="tel" id="reg-mobile" required class="clean-input bg-slate-50 w-full"></div>
+                            <div><label class="block text-sm font-medium text-slate-700 mb-1">Role</label>
+                                <select id="reg-role" required class="clean-input appearance-none bg-slate-50 w-full">
+                                    <option value="">Select Role</option>
+                                    <option value="Batsman">Batsman</option>
+                                    <option value="Bowler">Bowler</option>
+                                    <option value="All-Rounder">All-Rounder</option>
+                                    <option value="Keeper">Wicket-Keeper</option>
+                                </select>
+                            </div>
+                            <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-100 mt-2">
+                                <label class="block text-sm font-bold text-blue-900 mb-1">Create 4-Digit Security PIN</label>
+                                <input type="password" id="reg-pin" pattern="[0-9]{4}" maxlength="4" required placeholder="e.g. 1234" class="clean-input text-center tracking-widest font-mono text-lg !border-blue-200 focus:!border-blue-500 w-full">
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-4 mt-6 text-lg">Submit Application</button>
+                        </form>
+                    </div>
+
+                    <!-- Login -->
+                    <div id="content-hub-login" class="hide max-w-xs mx-auto">
+                        <button onclick="switchInnerTab('hub', 'selection')" class="text-sm font-bold text-slate-400 hover:text-slate-700 mb-8 flex items-center gap-1 transition-colors">← Back to Options</button>
+                        <form id="player-login-form" onsubmit="handlePlayerLogin(event)" class="space-y-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 text-center">Mobile Number</label>
+                                <input type="tel" id="login-mobile" required placeholder="Enter Mobile" class="clean-input text-center bg-slate-50 text-lg font-medium w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1 text-center">4-Digit PIN</label>
+                                <input type="password" id="login-pin" pattern="[0-9]{4}" maxlength="4" required placeholder="••••" class="clean-input text-center tracking-[0.5em] font-mono text-2xl bg-slate-50 w-full">
+                            </div>
+                            <button type="submit" class="btn-primary w-full py-4 mt-2 text-lg">Login</button>
+                        </form>
+                    </div>
+
+                    <!-- Dashboard -->
+                    <div id="content-hub-dash" class="hide">
+                        <div id="hub-dash-profile" class="block max-w-2xl mx-auto">
+                            <div class="flex items-center justify-between mb-6">
+                                <h2 class="text-xl font-black italic text-slate-900 transform -skew-x-6 uppercase tracking-tight">Player Portal</h2>
+                                <button onclick="handlePlayerLogout()" class="text-[10px] font-bold text-red-500 hover:text-red-700 bg-red-50 px-3 py-2 rounded-lg border border-red-100 uppercase tracking-widest">Logout</button>
+                            </div>
+                            <div class="clean-card bg-[#0a192f] border-slate-800 p-6 md:p-8 mb-8 shadow-2xl relative overflow-hidden">
+                                <div class="flex flex-col md:flex-row items-center md:items-start gap-4 relative z-10 text-center md:text-left">
+                                    <div id="profile-initial" class="w-20 h-20 bg-[#112240] border border-[#D4AF37]/50 text-transparent bg-clip-text bg-gradient-to-br from-[#D4AF37] to-yellow-200 rounded-2xl flex items-center justify-center text-4xl font-black italic transform -skew-x-6">P</div>
+                                    <div class="flex flex-col mt-2">
+                                        <h3 id="profile-name" class="text-2xl md:text-3xl font-black italic text-white transform -skew-x-6 uppercase tracking-tight mb-1">Name</h3>
+                                        <p id="profile-role" class="text-sm font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#10b981] to-[#3b82f6] transform -skew-x-6 uppercase tracking-widest">Role</p>
+                                        <p id="profile-welcome" class="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.25em] text-emerald-200">Welcome In</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+                                <div class="bg-white p-5 rounded-2xl border border-slate-100 text-center md:text-left">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Mobile</p>
+                                    <p id="profile-mobile" class="font-bold text-slate-900 text-lg">---</p>
+                                </div>
+                                <div class="bg-amber-50 p-5 rounded-2xl border border-amber-100 text-center md:text-left">
+                                    <p class="text-xs font-bold text-amber-600/70 uppercase tracking-widest mb-1">Draft Status</p>
+                                    <p id="profile-status" class="font-bold text-amber-700 text-lg flex items-center justify-center md:justify-start gap-2">
+                                        <span id="profile-status-dot" class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+                                        <span id="profile-status-text">Awaiting Bid</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: ADMIN / PORTALS LOGIN                -->
+        <!-- ========================================== -->
+        <div id="view-admin" class="app-view">
+            <div class="max-w-md mx-auto mt-10">
+                <div class="text-center mb-10">
+                    <h2 class="text-3xl md:text-4xl font-black italic text-slate-900 transform -skew-x-6 uppercase tracking-tight mb-2">Secure Portals</h2>
+                    <p class="text-sm font-medium text-slate-500 uppercase tracking-widest">Select your authorization level</p>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex gap-2 mb-6 bg-slate-200 p-1 rounded-xl">
+                    <button onclick="switchAdminTab('owner')" id="tab-portal-owner" class="flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg bg-white shadow-sm text-slate-900 transition-all">Franchise Owner</button>
+                    <button onclick="switchAdminTab('master')" id="tab-portal-master" class="flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg text-slate-500 hover:text-slate-700 transition-all">Master Admin</button>
+                </div>
+
+                <!-- Owner Login -->
+                <div id="form-portal-owner" class="clean-card bg-[#0a192f] border border-blue-500/30 p-6 sm:p-8 shadow-[0_10px_40px_rgba(59,130,246,0.15)] relative overflow-hidden block">
+                    <form onsubmit="handleOwnerLogin(event)" class="space-y-6 relative z-10">
+                        <div>
+                            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Select Franchise</label>
+                            <select id="owner-team-select" required class="w-full bg-[#112240] border border-blue-500/30 rounded-xl p-4 text-white font-bold focus:outline-none focus:border-blue-500 transition-all">
+                                <option value="">-- Select Team --</option>
+                                <option value="AP11">AP11</option>
+                                <option value="Cotton11">Cotton11</option>
+                                <option value="Balkrushna11">Balkrushna11</option>
+                                <option value="Ajinkya Classes11">Ajinkya Classes11</option>
+                                <option value="Ankushraj11">Ankushraj11</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-blue-400 uppercase tracking-widest mb-2">Owner PIN</label>
+                            <input type="password" id="owner-pin" required class="w-full bg-[#112240] border border-blue-500/30 rounded-xl p-4 text-white font-mono tracking-[0.3em] focus:outline-none focus:border-blue-500 transition-all placeholder:text-slate-600" placeholder="••••">
+                        </div>
+                        <button type="submit" class="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-black italic uppercase tracking-widest transform -skew-x-6 hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(59,130,246,0.4)]">
+                            Enter War Room <span class="inline-block transform skew-x-6">→</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Master Admin Login -->
+                <div id="form-portal-master" class="clean-card bg-[#0a192f] border border-red-500/30 p-6 sm:p-8 shadow-[0_10px_40px_rgba(220,38,38,0.15)] relative overflow-hidden hide">
+                    <form onsubmit="handleAdminLogin(event)" class="space-y-6 relative z-10">
+                        <div>
+                            <label class="block text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Admin ID</label>
+                            <input type="text" id="admin-username" required class="w-full bg-[#112240] border border-red-500/30 rounded-xl p-4 text-white font-mono tracking-wider focus:outline-none focus:border-red-500 transition-all" placeholder="Enter 'admin'">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-red-400 uppercase tracking-widest mb-2">Master Key</label>
+                            <input type="password" id="admin-password" required maxlength="4" class="w-full bg-[#112240] border border-red-500/30 rounded-xl p-4 text-white font-mono tracking-[0.3em] focus:outline-none focus:border-red-500 transition-all" placeholder="e.g. 1010">
+                        </div>
+                        <button type="submit" class="w-full py-4 mt-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 text-white font-black italic uppercase tracking-widest transform -skew-x-6 hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(220,38,38,0.4)]">
+                            Authenticate <span class="inline-block transform skew-x-6">→</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: ADMIN PANEL (FULL DASHBOARD)         -->
+        <!-- ========================================== -->
+        <div id="view-adminpanel" class="app-view">
+            <!-- Top Admin Header Bar -->
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-red-600 to-orange-500 rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(220,38,38,0.3)] transform rotate-3 shrink-0">
+                        <span class="text-2xl transform -rotate-3">⚙️</span>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 uppercase tracking-tight leading-none">Admin Control Center</h1>
+                        <p class="text-xs text-slate-500 font-mono mt-0.5">// Full override privileges active</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="navigateTo('auction')" class="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-blue-500/50 text-blue-600 font-bold uppercase tracking-widest text-xs hover:bg-blue-50 transition-all shadow-[0_0_15px_rgba(59,130,246,0.1)]">
+                        🔴 Go to Live Draft Desk
+                    </button>
+                    <button onclick="handleAdminLogout()" class="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-500/50 text-red-500 font-bold uppercase tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(220,38,38,0.1)]">
+                        🔒 Terminate Session
+                    </button>
+                </div>
+            </div>
+
+            <!-- Admin Info Card -->
+            <div class="clean-card bg-[#0a192f] border border-[#D4AF37]/30 p-6 md:p-8 mb-8 shadow-xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-[#D4AF37]/5 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="flex flex-col md:flex-row items-center md:items-start gap-6 relative z-10">
+                    <div class="w-20 h-20 bg-gradient-to-br from-[#D4AF37] to-yellow-600 rounded-2xl flex items-center justify-center shadow-[0_0_25px_rgba(212,175,55,0.4)] transform -rotate-3 shrink-0">
+                        <span class="text-4xl font-black text-[#0a192f] transform rotate-3">A</span>
+                    </div>
+                    <div class="text-center md:text-left">
+                        <span class="text-[10px] font-bold text-[#D4AF37]/60 uppercase tracking-[0.25em]">Authorized Administrator</span>
+                        <h2 class="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 uppercase tracking-tight transform -skew-x-3 mt-0.5">Amol Huse</h2>
+                        <p class="text-base font-bold text-white/80 mt-1">ARc next Pvt Ltd</p>
+                    </div>
+                    <div class="md:ml-auto flex flex-col gap-3 text-right">
+                        <div class="bg-[#112240] rounded-xl px-4 py-2 border border-[#D4AF37]/20">
+                            <p class="text-[10px] text-slate-400 uppercase tracking-widest">Total Registrations</p>
+                            <p class="text-2xl font-black text-white" id="admin-total-players">0</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Franchise PINs Display -->
+            <div class="clean-card p-6 mb-8 border-slate-200 shadow-lg">
+                <h2 class="font-black uppercase tracking-wide text-slate-900 mb-4 flex items-center gap-2">🔑 Franchise Access PINs</h2>
+                <p class="text-xs text-slate-500 mb-4">Provide these 4-digit PINs to the respective franchise owners for War Room access.</p>
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-4" id="admin-pin-display-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Auction Session Control -->
+            <div class="clean-card p-6 mb-8 border-slate-200 shadow-lg">
+                <h2 class="font-black uppercase tracking-wide text-slate-900 mb-4 flex items-center gap-2">🚀 Auction Session Control</h2>
+                <p class="text-xs text-slate-500 mb-4">Franchise owners cannot log into the War Room until you activate the session.</p>
+                <div class="flex items-center gap-4 flex-wrap">
+                    <button id="btn-toggle-session" onclick="adminToggleSession()" class="px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-emerald-700 transition-colors">
+                        Start Auction Session
+                    </button>
+                    <span id="session-status-text" class="font-bold text-slate-500 text-sm">Currently: OFFLINE</span>
+                </div>
+            </div>
+
+            <!-- DIRECTIVE 1: Override Player Assignments (Skipped for now) -->
+            <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg hide" id="admin-override-section">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+                    <span class="text-xl">🔨</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">Override Player Assignments</h2>
+                        <p class="text-blue-200 text-xs">Assign remaining pool players instantly without bidding.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                        <div class="md:col-span-1 bg-slate-900 rounded-2xl p-5 text-center flex flex-col gap-2 items-center justify-center">
+                            <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Currently On Block</span>
+                            <p id="ap-player-name" class="text-2xl font-black text-white italic transform -skew-x-6">---</p>
+                            <p id="ap-player-role" class="text-blue-400 text-sm font-medium">---</p>
+                            <button onclick="adminNextPlayer()" class="mt-2 w-full py-2 rounded-xl border border-slate-600 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">⏭ Next Player</button>
+                        </div>
+                        <div class="md:col-span-2">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Force Assign to Franchise (At Base Price)</p>
+                            <div id="admin-assign-buttons" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex flex-col gap-3 mb-3 md:flex-row md:items-center md:justify-between">
+                            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest">Full Unassigned Pool</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600">
+                                    <input id="admin-select-all-unassigned-checkbox" type="checkbox" onchange="toggleSelectAllUnassigned(this.checked)" class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                    Select all
+                                </label>
+                                <button id="admin-delete-selected-btn" onclick="confirmBulkDeleteUnassigned()" class="px-4 py-2 rounded-full bg-red-50 border border-red-200 text-red-700 text-xs font-black uppercase tracking-wide hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                    Delete Selected Permanently
+                                </button>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto rounded-xl border border-slate-100">
+                            <table class="w-full text-sm text-left min-w-[620px]">
+                                <thead class="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                                    <tr>
+                                        <th class="py-3 px-4 text-center">Pick</th>
+                                        <th class="py-3 px-4">#</th>
+                                        <th class="py-3 px-4">Player Name</th>
+                                        <th class="py-3 px-4">Role</th>
+                                        <th class="py-3 px-4 text-center">Assign To</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-unassigned-table" class="divide-y divide-slate-100 text-slate-700">
+                                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Syncing from Google Sheets...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DIRECTIVE 2: Force Live Score Updates -->
+            <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
+                    <span class="text-xl">⚡</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">Force Live Score Updates</h2>
+                        <p class="text-emerald-200 text-xs">Manually push the official live scorecard.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div class="grid sm:grid-cols-2 gap-4 max-w-2xl">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Team 1 Name</label>
+                            <input type="text" id="ls-team1" value="AP11" class="clean-input bg-slate-50 text-sm" placeholder="e.g. AP11">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Team 1 Score</label>
+                            <input type="text" id="ls-score1" value="112/4 (8.2 ov)" class="clean-input bg-slate-50 text-sm" placeholder="e.g. 112/4 (8.2 ov)">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Team 2 Name</label>
+                            <input type="text" id="ls-team2" value="Cotton11" class="clean-input bg-slate-50 text-sm" placeholder="e.g. Cotton11">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Team 2 Score</label>
+                            <input type="text" id="ls-score2" value="Yet to bat" class="clean-input bg-slate-50 text-sm" placeholder="e.g. Yet to bat">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Current Batter *</label>
+                            <input type="text" id="ls-batter1" value="Rahul D. *" class="clean-input bg-slate-50 text-sm" placeholder="Opening batter">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Current Bowler</label>
+                            <input type="text" id="ls-bowler" value="Jasprit" class="clean-input bg-slate-50 text-sm" placeholder="Current bowler">
+                        </div>
+                    </div>
+                    <button onclick="forceScoreUpdate()" class="mt-5 px-8 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black uppercase tracking-wider text-sm hover:shadow-[0_0_20px_rgba(16,185,129,0.4)] transition-all hover:-translate-y-0.5 transform">
+                        ⚡ Push Live Score
+                    </button>
+                </div>
+            </div>
+
+            <!-- DIRECTIVE 3: Approve Roster Changes -->
+            <div class="clean-card p-0 overflow-hidden mb-8 border-slate-200 shadow-lg">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
+                    <span class="text-xl">📋</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">Approve Roster Changes</h2>
+                        <p class="text-amber-100 text-xs">View all drafted players per franchise and approve or override.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div id="admin-roster-view" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+
+            <!-- Download Final Data Sheet -->
+            <div class="clean-card p-6 bg-gradient-to-r from-slate-900 to-slate-800 border-slate-700 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-center gap-6 justify-between">
+                    <div>
+                        <h3 class="text-lg font-black text-white uppercase tracking-wide">📥 Download Final Data Sheet</h3>
+                        <p class="text-slate-400 text-sm mt-1">Export the complete registered player database from Google Sheets as a CSV file.</p>
+                    </div>
+                    <button onclick="downloadPlayerDataCSV()" class="shrink-0 px-8 py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-black uppercase tracking-wider text-sm hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all hover:-translate-y-1 transform flex items-center gap-3">
+                        <span class="text-xl">📥</span> Download CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Universal Modal -->
+    <div id="custom-modal" class="fixed inset-0 flex items-center justify-center hide px-4 transition-opacity duration-300 z-[1000]">
+        <div class="absolute inset-0 bg-slate-900/40 cursor-pointer" onclick="closeModal()"></div>
+        <div class="bg-white rounded-2xl shadow-2xl p-0 max-w-sm w-full z-10 relative overflow-hidden transform scale-95 opacity-0 transition-all duration-300 border border-slate-100" id="modal-content-box">
+            <div class="flex justify-between items-center p-6 border-b border-slate-100">
+                <h3 id="modal-title" class="text-lg font-bold text-slate-900">Notice</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="modal-body" class="mb-6 text-slate-600 text-sm leading-relaxed"></div>
+                <button onclick="closeModal()" class="w-full btn-secondary py-2.5 text-sm">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // --- 1. Master State ---
+        const state = {
+            teams: { 'AP11': [], 'Cotton11': [], 'Balkrushna11': [], 'Ajinkya Classes11': [], 'Ankushraj11': [] },
+            teamSpent: { 'AP11': 0, 'Cotton11': 0, 'Balkrushna11': 0, 'Ajinkya Classes11': 0, 'Ankushraj11': 0 },
+            teamPins: { 'AP11': '0718', 'Cotton11': '0719', 'Balkrushna11': '0720', 'Ajinkya Classes11': '0721', 'Ankushraj11': '0722' }, // Hardcoded sequential codes
+            unassigned: [], 
+            registeredPlayers: [],
+            allPlayers: [],
+            loggedInPlayer: null,
+            selectedUnassignedPlayers: [],
+            chartInitialized: false,
+            
+            isAdmin: false, // For Master Panel UI features
+            userRole: 'viewer', // 'viewer', 'admin', or 'owner_TEAMNAME'
+            
+            // Hardware Sync Configuration (The "Cinematic" Secret Sauce)
+            auction: {
+                status: 'waiting', // waiting, active, warning, sold
+                playerIdx: 0,
+                currentBid: 20, 
+                highestBidder: null,
+                endTime: 0,
+                passedTeams: [], // Tracks teams that tapped "Pass"
+                isSessionActive: false, // Prevents owner login until admin starts it
+                loggedInOwners: [] // Tracks active war room connections
+            },
+
+            liveScore: { team1: 'AP11', score1: '112/4 (8.2 ov)', team2: 'Cotton11', score2: 'Yet to bat', batter: 'Rahul D. *', bowler: 'Jasprit' }
+        };
+
+        const AUCTION_SYNC_KEY = 'dpl_cinematic_auction_state';
+        const GOOGLE_APP_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzAbavuqyEW635Wu3Q193eMlpSvCUfstgQC_138bQLnfefaInalglXkQunVTdo2pb2F2A/exec';
+        const LIVE_SCORE_STORAGE_KEY = 'dpl_live_score';
+
+        // Team Configurations (Colors & UI info)
+        const teamConfig = {
+            'AP11': { name: 'AP11', glow: 'rgba(236, 72, 153, 0.6)', border: '#ec4899', grad: 'from-pink-500 to-orange-500', owner: 'Atish Palwe' },
+            'Cotton11': { name: 'Cotton11', glow: 'rgba(6, 182, 212, 0.6)', border: '#06b6d4', grad: 'from-cyan-500 to-blue-500', owner: 'Bhagwat Dole' },
+            'Balkrushna11': { name: 'Balkrushna11', glow: 'rgba(16, 185, 129, 0.6)', border: '#10b981', grad: 'from-emerald-500 to-lime-500', owner: 'Mukund Huse' },
+            'Ajinkya Classes11': { name: 'Ajinkya', glow: 'rgba(239, 68, 68, 0.6)', border: '#ef4444', grad: 'from-red-500 to-orange-500', owner: 'Ajinkya Dhakane Sir' },
+            'Ankushraj11': { name: 'Ankushraj', glow: 'rgba(168, 85, 247, 0.6)', border: '#a855f7', grad: 'from-purple-500 to-pink-500', owner: 'Yogesh Huse Sir' }
+        };
+
+        // --- Utils & Core Data ---
+        function formatName(str) {
+            if (!str) return "";
+            const parts = str.trim().split(/\s+/);
+            const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+            if (parts.length === 1) return capitalize(parts[0]);
+            if (parts.length === 2) return capitalize(parts[0]) + " " + capitalize(parts[1]);
+            const first = capitalize(parts[0]);
+            const last = capitalize(parts[parts.length - 1]);
+            let middles = "";
+            for (let i = 1; i < parts.length - 1; i++) { middles += parts[i].charAt(0).toUpperCase() + " "; }
+            return first + " " + middles + last;
+        }
+
+        function escapeHtml(value) {
+            return (value || '').toString().replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+
+        function isUnassignedTeam(teamName) {
+            const normalized = (teamName || '').toString().trim().toLowerCase();
+            return normalized === '' || normalized === 'unassigned' || normalized === 'unassign' || normalized === 'unasssign';
+        }
+
+        function getPlayerSelectionKey(player) {
+            return (player.mobile || `${formatName(player.name)}-${player.role || 'player'}`).toString();
+        }
+        function getPlayersByTeam(teamName) {
+            return state.allPlayers.filter(player => ((player.team || '').toString().trim() === teamName));
+        }
+
+        function findPlayerRecord(teamName, mobile, playerName) {
+            return getPlayersByTeam(teamName).find(player => {
+                const mobileMatch = mobile && (player.mobile || '').toString() === mobile.toString();
+                const nameMatch = playerName && formatName(player.name) === playerName;
+                return mobileMatch || nameMatch;
+            });
+        }
+
+        function populateStateFromPlayers(playersList) {
+            state.unassigned = []; 
+            state.allPlayers = playersList; 
+            
+            state.teams = { 'AP11': [], 'Cotton11': [], 'Balkrushna11': [], 'Ajinkya Classes11': [], 'Ankushraj11': [] };
+            state.teamSpent = { 'AP11': 0, 'Cotton11': 0, 'Balkrushna11': 0, 'Ajinkya Classes11': 0, 'Ankushraj11': 0 };
+
+            playersList.forEach(p => {
+                const teamName = p.team ? p.team.toString().trim() : 'Unassigned';
+                const formattedName = formatName(p.name);
+                // Clean up price to extract numeric value if needed
+                const priceVal = p.price ? parseInt(p.price.toString().replace(/[^0-9]/g, '')) || 20 : 20;
+
+                if (isUnassignedTeam(teamName)) {
+                    state.unassigned.push({ name: formattedName, role: p.role, price: `$${priceVal}`, mobile: p.mobile || '', team: 'Unassigned' });
+                } else if (state.teams[teamName] !== undefined) {
+                    state.teams[teamName].push(formattedName);
+                    state.teamSpent[teamName] += priceVal;
+                }
+            });
+
+            const availableKeys = new Set(state.unassigned.map(getPlayerSelectionKey));
+            state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(key => availableKeys.has(key));
+
+            renderTeams();
+            if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+            if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+            syncLoggedInPlayerDashboard();
+        }
+
+        async function syncDataFromGoogleSheets() {
+            try {
+                const cachedData = localStorage.getItem('dpl_cached_players');
+                if (cachedData && state.allPlayers.length === 0) populateStateFromPlayers(JSON.parse(cachedData));
+
+                const response = await fetch(GOOGLE_APP_SCRIPT_URL);
+                const result = await response.json();
+                
+                if (result.status === 'success' && result.players) {
+                    localStorage.setItem('dpl_cached_players', JSON.stringify(result.players));
+                    populateStateFromPlayers(result.players);
+                }
+            } catch (error) {
+                console.error("Background sync failed:", error);
+            }
+        }
+
+        async function assignPlayerToTeam(player, teamName, price = null) {
+            const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'assignPlayer',
+                    team: teamName,
+                    mobile: player.mobile || '',
+                    name: player.name || '',
+                    role: player.role || '',
+                    price: price || player.price || ''
+                })
+            });
+            return response.json();
+        }
+
+        async function removePlayerFromTeam(player, mode) {
+            const currentTeam = (player.team || '').toString().trim();
+            const targetTeam = mode === 'delete' ? '' : 'Unassigned';
+            const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'removePlayer',
+                    mode: mode,
+                    removeMode: mode,
+                    mobile: player.mobile || '',
+                    name: player.name || '',
+                    role: player.role || '',
+                    team: currentTeam,
+                    currentTeam: currentTeam,
+                    targetTeam: targetTeam,
+                    status: targetTeam || 'Deleted',
+                    playerId: (player.mobile || player.name || '').toString()
+                })
+            });
+            return response.json();
+        }
+
+        // --- AUDIO ENGINE ---
+        function playSoldSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                // Celebratory Chord (C Major Arpeggio)
+                const playNote = (freq, startTime, duration) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'triangle';
+                    osc.frequency.value = freq;
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.1); // Attack
+                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); // Decay/Release
+                    
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                const now = ctx.currentTime;
+                // Play a quick satisfying "Ta-Da" chord
+                playNote(523.25, now, 0.5);       // C5
+                playNote(659.25, now + 0.1, 0.6); // E5
+                playNote(783.99, now + 0.2, 1.0); // G5
+                playNote(1046.50, now + 0.2, 1.2); // C6
+
+            } catch (e) {
+                console.log('Audio playback blocked by browser interaction policy or not supported');
+            }
+        }
+
+        // --- 2. Live Sync Engine (LocalStorage mimicking WebSockets) ---
+        function loadAuctionState() {
+            try {
+                const savedAuction = localStorage.getItem(AUCTION_SYNC_KEY);
+                if (savedAuction) state.auction = JSON.parse(savedAuction);
+                if (!state.auction.loggedInOwners) state.auction.loggedInOwners = []; // Ensure array exists
+                
+                const savedTeams = localStorage.getItem('dpl_teams_state');
+                if (savedTeams) {
+                    const parsed = JSON.parse(savedTeams);
+                    if(state.allPlayers.length === 0) {
+                        state.teams = parsed.teams;
+                        state.teamSpent = parsed.teamSpent;
+                    }
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function saveAuctionState() {
+            localStorage.setItem(AUCTION_SYNC_KEY, JSON.stringify(state.auction));
+        }
+        
+        function adminToggleSession() {
+            state.auction.isSessionActive = !state.auction.isSessionActive;
+            if (!state.auction.isSessionActive) {
+                state.auction.loggedInOwners = []; // Clear logins when session stops
+            }
+            saveAuctionState();
+            renderAdminPanel();
+            
+            if (state.auction.isSessionActive) {
+                showModal("Session Activated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🚀</span><h3 class='font-bold text-emerald-600 text-xl'>Auction Live</h3><p class='text-slate-500 mt-2'>Franchise Owners can now log in using their assigned PINs (0718 - 0722).</p></div>");
+            } else {
+                showModal("Session Deactivated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🔒</span><h3 class='font-bold text-red-600 text-xl'>Auction Locked</h3><p class='text-slate-500 mt-2'>Owner logins are now blocked.</p></div>");
+            }
+        }
+
+        window.addEventListener('storage', (event) => {
+            if (event.key === AUCTION_SYNC_KEY || event.key === 'dpl_teams_state') {
+                loadAuctionState();
+                if(document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+            }
+            if (event.key === LIVE_SCORE_STORAGE_KEY) {
+                loadLiveScoreState();
+                applyLiveScoreState();
+            }
+        });
+
+        // Loop for the progress bar - Highly Optimized using requestAnimationFrame (60 FPS)
+        let animationFrameId = null;
+        function startTimerLoop() {
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            
+            const bar = document.getElementById('auction-timer-bar');
+            const text = document.getElementById('auction-time-text');
+
+            function update() {
+                if (state.auction.status === 'warning') {
+                    const now = Date.now();
+                    const remaining = Math.max(0, state.auction.endTime - now);
+                    const seconds = (remaining / 1000).toFixed(1);
+                    
+                    if (text) text.innerText = `${seconds}s`;
+                    if (bar) {
+                        const percentage = (remaining / 5000) * 100; // Warning is 5 seconds
+                        bar.style.width = `${percentage}%`;
+                    }
+                } else {
+                    // Ensure UI is cleared out if state changed
+                    if (bar) bar.style.width = `100%`;
+                }
+                // Always poll smoothly without blocking the main thread
+                animationFrameId = requestAnimationFrame(update);
+            }
+            animationFrameId = requestAnimationFrame(update);
+        }
+
+        // --- 3. Bidding Core Mechanics ---
+
+        function adminToggleAuctionStage() {
+            if (state.unassigned.length === 0) return showModal("Draft Complete", "No players left in pool!");
+            
+            // Check if all owners are logged in
+            const requiredOwners = Object.keys(state.teams).length;
+            const currentLogins = state.auction.loggedInOwners ? state.auction.loggedInOwners.length : 0;
+            if (currentLogins < requiredOwners) {
+                return showModal("Waiting for Owners", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⏳</span><h3 class='font-bold text-slate-800 text-xl'>War Room Incomplete</h3><p class='text-slate-500 mt-2'>Only ${currentLogins}/${requiredOwners} franchise owners have securely connected to the session. You cannot bring a player to the block until all teams are present.</p></div>`);
+            }
+
+            if (state.auction.status === 'sold') {
+                state.auction.playerIdx = (state.auction.playerIdx + 1) % state.unassigned.length;
+            }
+
+            state.auction.status = 'active';
+            state.auction.currentBid = 20;
+            state.auction.highestBidder = null;
+            state.auction.passedTeams = []; // Reset passed teams for the new player
+            
+            saveAuctionState();
+            renderAuctionUI();
+            if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+        }
+        
+        function adminGiveWarning() {
+            if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
+            state.auction.status = 'warning';
+            state.auction.endTime = Date.now() + 5000; // 5 Seconds Warning Timer
+            saveAuctionState();
+            renderAuctionUI();
+        }
+
+        function adminResetCurrentAuction() {
+            state.auction.status = 'waiting';
+            state.auction.passedTeams = [];
+            saveAuctionState();
+            renderAuctionUI();
+        }
+
+        function ownerPassBid(teamName) {
+            if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
+            if (!state.auction.passedTeams) state.auction.passedTeams = [];
+            
+            // Mark team as passed
+            if (!state.auction.passedTeams.includes(teamName)) {
+                state.auction.passedTeams.push(teamName);
+                saveAuctionState();
+                renderAuctionUI();
+            }
+        }
+
+        function adminReviveTeam(teamName) {
+            if (!state.auction.passedTeams) return;
+            // Remove team from passed list so they can bid again
+            state.auction.passedTeams = state.auction.passedTeams.filter(t => t !== teamName);
+            saveAuctionState();
+            renderAuctionUI();
+        }
+
+        function placeOwnerBid(teamName, amount = 10) {
+            if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
+            if (state.auction.highestBidder === teamName) return;
+            if (state.auction.passedTeams && state.auction.passedTeams.includes(teamName)) return; // Prevent bidding if passed
+
+            const currentCount = state.teams[teamName] ? state.teams[teamName].length : 0;
+            const spent = state.teamSpent[teamName] || 0;
+            
+            const remainingRequiredSlots = Math.max(0, 15 - currentCount - 1); 
+            const reserveFundsNeeded = remainingRequiredSlots * 20; 
+            const maxAllowedBid = 1000 - spent - reserveFundsNeeded;
+
+            const nextBid = state.auction.highestBidder === null ? 20 : state.auction.currentBid + amount;
+            
+            if (nextBid > maxAllowedBid) {
+                showModal("Budget Limit Reached", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚠️</span><h3 class='font-bold text-red-600 text-xl'>Insufficient Purse</h3><p class='text-slate-500 mt-2'>You must reserve enough funds ($20 per slot) to reach the minimum 15 players.</p><p class='text-slate-400 text-xs mt-3'>Max allowable bid: $${maxAllowedBid}</p></div>`);
+                return;
+            }
+
+            state.auction.currentBid = nextBid;
+            state.auction.highestBidder = teamName;
+            state.auction.status = 'active'; // Reset back to active if someone bids during warning!
+
+            saveAuctionState();
+            renderAuctionUI();
+        }
+
+        async function adminLockAndSell() {
+            if (state.auction.status === 'sold') return;
+            state.auction.status = 'sold';
+            
+            const team = state.auction.highestBidder;
+            const player = state.unassigned[state.auction.playerIdx];
+
+            if (team && player) {
+                // Optimistic update
+                if(!state.teams[team]) state.teams[team] = [];
+                state.teams[team].push(player.name);
+                state.teamSpent[team] = (state.teamSpent[team] || 0) + state.auction.currentBid;
+
+                // Sync to backend directly
+                try {
+                    await assignPlayerToTeam(player, team, state.auction.currentBid);
+                    syncDataFromGoogleSheets();
+                } catch (e) {
+                    console.error("Backend assign error:", e);
+                }
+            } else {
+                // Unsold/Pass logic - just advance
+                console.log("Player Unsold/Passed");
+            }
+
+            saveAuctionState();
+            localStorage.setItem('dpl_teams_state', JSON.stringify({ teams: state.teams, teamSpent: state.teamSpent }));
+            renderAuctionUI();
+
+            // Smooth transition to next player logic
+            setTimeout(() => {
+                if(state.auction.status === 'sold' && state.userRole === 'admin') {
+                    // 1. Fade out current stage
+                    const stage = document.getElementById('stage-active');
+                    const stamp = document.getElementById('auction-sold-stamp');
+                    if (stage) stage.classList.add('stage-transition-out');
+                    if (stamp) stamp.style.opacity = '0'; // Quickly hide stamp
+                    
+                    setTimeout(() => {
+                        // 2. Clear out class and advance player
+                        if (stage) stage.classList.remove('stage-transition-out');
+                        state.auction.playerIdx = 0; 
+                        adminToggleAuctionStage();
+                    }, 500); // Wait 500ms for fade out
+                }
+            }, 4500); // Trigger transition 4.5 seconds after sale
+        }
+
+        // --- 4. Render Logic ---
+        
+        function renderTeams() {
+            const grid = document.getElementById('teams-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            
+            const teamImages = { 'AP11': '1.png', 'Cotton11': '2.png', 'Balkrushna11': '3.png', 'Ajinkya Classes11': '4.png', 'Ankushraj11': '5.png' };
+            const teamImageClasses = { 'AP11': 'team-photo--1', 'Cotton11': 'team-photo--2', 'Balkrushna11': 'team-photo--3', 'Ajinkya Classes11': 'team-photo--4', 'Ankushraj11': 'team-photo--5' };
+
+            Object.keys(state.teams).forEach(team => {
+                const count = state.teams[team].length;
+                const details = teamConfig[team] || { owner: 'Unknown', grad: 'from-slate-500 to-slate-700' };
+                const teamImage = teamImages[team];
+                const teamImageClass = teamImageClasses[team] || '';
+
+                grid.innerHTML += `
+                    <div onclick="showTeamModal('${team}')" class="team-card clean-card clean-card-hover p-4 sm:p-6 cursor-pointer flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 relative overflow-hidden group border-2 border-transparent hover:border-slate-200">
+                        <div class="absolute inset-0 bg-gradient-to-br ${details.grad} opacity-0 group-hover:opacity-[0.03] transition-opacity duration-300 pointer-events-none"></div>
+                        <div class="team-card-copy w-full sm:max-w-[60%] relative z-10">
+                            <h3 class="font-black text-xl sm:text-2xl text-slate-900 mb-2 uppercase tracking-tight">${team}</h3>
+                            <div class="mb-4">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-0.5">Franchise Owner</span>
+                                <span class="text-lg sm:text-xl md:text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r ${details.grad} drop-shadow-sm transform -skew-x-6 inline-block">
+                                    ${details.owner}
+                                </span>
+                            </div>
+                            <p class="text-xs font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1.5 rounded-md border border-slate-200">
+                                🏏 ${count} Players Drafted
+                            </p>
+                        </div>
+                        <div class="team-photo-wrap relative z-10">
+                            ${teamImage ? `<div class="team-photo-frame"><img src="${teamImage}" alt="${team} owner" class="team-photo ${teamImageClass} select-none pointer-events-none"></div>` : ''}
+                        </div>
+                        <div class="hidden sm:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-50/90 border-2 border-slate-100 items-center justify-center text-slate-400 group-hover:translate-x-2 transition-transform shadow-sm shrink-0 z-10">→</div>
+                    </div>
+                `;
+            });
+        }
+
+        let lastAuctionStatus = 'waiting';
+
+        function renderAuctionUI() {
+            const uiWait = document.getElementById('stage-waiting');
+            const uiActive = document.getElementById('stage-active');
+            const stamp = document.getElementById('auction-sold-stamp');
+            const timerWrapper = document.getElementById('auction-timer-wrapper');
+            const statusBadge = document.getElementById('auction-status-badge');
+            if(!uiWait || !uiActive || !stamp) return;
+
+            // Trigger Sound Effect if status just changed to 'sold'
+            if (state.auction.status === 'sold' && lastAuctionStatus !== 'sold') {
+                playSoldSound();
+            }
+            lastAuctionStatus = state.auction.status;
+            
+            if (state.auction.status === 'waiting') {
+                uiWait.classList.remove('hide');
+                uiActive.classList.add('hide');
+                stamp.classList.remove('stamp-active');
+            } else {
+                uiWait.classList.add('hide');
+                uiActive.classList.remove('hide');
+                
+                const p = state.unassigned[state.auction.playerIdx];
+                if (p) {
+                    const nameEl = document.getElementById('auction-player-name');
+                    if (nameEl.innerText !== p.name && nameEl.innerText !== "---") {
+                        // New player loaded: Trigger slide up animation
+                        uiActive.classList.remove('stage-transition-in');
+                        void uiActive.offsetWidth; // Trigger reflow
+                        uiActive.classList.add('stage-transition-in');
+
+                        nameEl.classList.add('glitch-text');
+                        setTimeout(() => nameEl.classList.remove('glitch-text'), 2000);
+                    }
+                    nameEl.innerText = p.name;
+                    document.getElementById('auction-player-role').innerText = p.role;
+                } else {
+                    document.getElementById('auction-player-name').innerText = "Pool Empty";
+                    document.getElementById('auction-player-role').innerText = "Draft concluded.";
+                }
+
+                document.getElementById('auction-current-bid').innerText = `$${state.auction.currentBid.toLocaleString()}`;
+                const card = document.getElementById('auction-bid-card');
+                const bidderText = document.getElementById('auction-highest-bidder');
+                
+                if (state.auction.highestBidder) {
+                    const tConf = teamConfig[state.auction.highestBidder];
+                    bidderText.innerHTML = `<span class="text-white">${tConf.name}</span> holds the bid`;
+                    card.style.borderColor = tConf.border;
+                    card.style.boxShadow = `0 0 40px ${tConf.glow}`;
+                } else {
+                    bidderText.innerText = "None (Base Price)";
+                    card.style.borderColor = "#334155";
+                    card.style.boxShadow = "none";
+                }
+
+                // Handle Warning/Timer UI
+                if (state.auction.status === 'warning') {
+                    timerWrapper.classList.remove('hide');
+                    statusBadge.innerText = "FINAL WARNING - BIDDING CLOSING";
+                    statusBadge.classList.add('bg-red-600', 'border-red-500', 'text-white');
+                    statusBadge.classList.remove('bg-slate-800', 'border-slate-700', 'text-slate-300');
+                } else {
+                    timerWrapper.classList.add('hide');
+                    statusBadge.innerText = state.auction.status === 'sold' ? "LOCKED" : "Bidding Open";
+                    statusBadge.classList.remove('bg-red-600', 'border-red-500', 'text-white');
+                    statusBadge.classList.add('bg-slate-800', 'border-slate-700', 'text-slate-300');
+                    
+                    // Reset timer bar immediately to avoid visual glitching when switching states
+                    const bar = document.getElementById('auction-timer-bar');
+                    if (bar) bar.style.width = '100%';
+                }
+
+                // Handle Sold UI
+                if (state.auction.status === 'sold') {
+                    stamp.classList.add('stamp-active');
+                    if (state.auction.highestBidder) {
+                        stamp.innerText = `SOLD TO ${teamConfig[state.auction.highestBidder].name.toUpperCase()}!`;
+                        stamp.style.color = "#10b981"; // Green color
+                        stamp.style.borderColor = "#10b981";
+                        stamp.style.textShadow = "0 0 10px rgba(16, 185, 129, 0.5)"; // Reduced shadow for performance
+                        stamp.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.3)";
+                    } else {
+                        stamp.innerText = "UNSOLD";
+                        stamp.style.color = "#ef4444"; // Red color
+                        stamp.style.borderColor = "#ef4444";
+                        stamp.style.textShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
+                        stamp.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.3), inset 0 0 10px rgba(239, 68, 68, 0.3)";
+                    }
+                } else {
+                    stamp.classList.remove('stamp-active');
+                }
+            }
+
+            // Render Tables
+            const grid = document.getElementById('franchise-tables-grid');
+            grid.innerHTML = '';
+            
+            Object.keys(teamConfig).forEach(team => {
+                const conf = teamConfig[team];
+                const isHighest = state.auction.highestBidder === team;
+                const isMyTeam = state.userRole === `owner_${team}`;
+                const isActiveStage = state.auction.status === 'active' || state.auction.status === 'warning';
+                const hasPassed = state.auction.passedTeams && state.auction.passedTeams.includes(team);
+                const isConnected = state.auction.loggedInOwners && state.auction.loggedInOwners.includes(team);
+                
+                const currentCount = state.teams[team] ? state.teams[team].length : 0;
+                const spent = state.teamSpent[team] || 0;
+                const remainingPurse = 1000 - spent;
+
+                let buttonHTML = '';
+                if (isMyTeam) {
+                    if (isActiveStage) {
+                        if (hasPassed) {
+                            buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-red-900/40 text-red-400 font-black uppercase text-xs cursor-not-allowed border border-red-900/50">PASSED 🚫</button>`;
+                        } else if (isHighest) {
+                            buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-slate-800 text-slate-400 font-black uppercase text-xs cursor-not-allowed border border-slate-700">Highest Bidder</button>`;
+                        } else {
+                            buttonHTML = `
+                            <div class="flex flex-col gap-1.5 mt-3 w-full">
+                                <div class="grid grid-cols-3 gap-1.5 w-full">
+                                    <button onclick="placeOwnerBid('${team}', 10)" class="py-2 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-[11px] hover:scale-105 transition-transform shadow-md shadow-black/20">+$10</button>
+                                    <button onclick="placeOwnerBid('${team}', 50)" class="py-2 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-[11px] hover:scale-105 transition-transform shadow-md shadow-black/20">+$50</button>
+                                    <button onclick="placeOwnerBid('${team}', 100)" class="py-2 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-[11px] hover:scale-105 transition-transform shadow-md shadow-black/20">+$100</button>
+                                </div>
+                                <button onclick="ownerPassBid('${team}')" class="w-full py-2 rounded-lg bg-slate-800 text-slate-400 font-bold uppercase text-[10px] hover:bg-red-900 hover:text-red-300 transition-colors border border-slate-700">PASS</button>
+                            </div>`;
+                        }
+                    } else {
+                        buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-slate-800/50 text-slate-500 font-black uppercase text-xs cursor-not-allowed">Awaiting Player</button>`;
+                    }
+                } else if (state.userRole === 'admin') {
+                     if (isActiveStage) {
+                         if (hasPassed) {
+                             buttonHTML = `<button onclick="adminReviveTeam('${team}')" class="mt-4 w-full py-1.5 rounded bg-amber-900/40 border border-amber-700/50 text-amber-400 font-bold uppercase text-[10px] hover:bg-amber-600 hover:text-white transition-colors">Revive Team 🔄</button>`;
+                         } else {
+                             buttonHTML = `<button onclick="placeOwnerBid('${team}', 10)" class="mt-4 w-full py-1.5 rounded bg-slate-800 text-slate-400 font-bold uppercase text-[10px] hover:text-white">Force Bid (+$10)</button>`;
+                         }
+                     }
+                } else if (hasPassed && isActiveStage) {
+                    // Display for viewers if team is out
+                    buttonHTML = `<div class="mt-4 text-xs font-bold text-red-500 uppercase tracking-widest">OUT</div>`;
+                }
+
+                grid.innerHTML += `
+                    <div class="franchise-table p-4 sm:p-5 rounded-2xl border bg-slate-900 flex flex-col items-center justify-center text-center ${isHighest ? 'active-bidder' : (hasPassed ? 'opacity-40 border-red-900/30' : 'border-slate-800 opacity-70')}" style="--team-glow: ${conf.glow}; --team-border: ${conf.border};">
+                        ${isConnected ? '<span class="absolute top-2 right-3 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Connected"></span>' : '<span class="absolute top-2 right-3 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" title="Disconnected"></span>'}
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mb-2 bg-gradient-to-br ${conf.grad} flex items-center justify-center text-white font-black italic text-lg shadow-inner shadow-white/20">
+                            ${conf.name.charAt(0)}
+                        </div>
+                        <h4 class="font-black text-white text-xs sm:text-sm uppercase tracking-wider">${conf.name}</h4>
+                        <div class="flex gap-2 mt-1.5 mb-1 flex-wrap justify-center">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-400/10 border border-emerald-400/20">💰 $${remainingPurse}</span>
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded text-blue-400 bg-blue-400/10 border border-blue-400/20">👥 ${currentCount}/15</span>
+                        </div>
+                        ${isHighest ? `<div class="mt-1 text-[10px] font-bold px-2 py-0.5 rounded text-white bg-slate-800 border" style="border-color:${conf.border}">LEADING</div>` : ''}
+                        ${buttonHTML}
+                    </div>
+                `;
+            });
+
+            const adminControls = document.getElementById('auction-admin-controls');
+            const sellBtn = document.getElementById('btn-admin-sell');
+            if (state.userRole === 'admin') {
+                adminControls.classList.remove('hide');
+                // Update specific buttons based on state
+                if (sellBtn) {
+                    if (state.auction.status === 'sold') {
+                        sellBtn.innerText = "ALREADY SOLD/LOCKED";
+                        sellBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                        sellBtn.disabled = true;
+                    } else if (state.auction.highestBidder) {
+                        sellBtn.innerText = `Lock & Sell to ${teamConfig[state.auction.highestBidder].name}`;
+                        sellBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        sellBtn.disabled = false;
+                    } else {
+                        sellBtn.innerText = `Pass / Unsold`;
+                        sellBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        sellBtn.disabled = false;
+                    }
+                }
+            } else {
+                adminControls.classList.add('hide');
+            }
+
+            const statusTag = document.getElementById('auction-user-status');
+            if (state.userRole === 'admin') {
+                const currentLogins = state.auction.loggedInOwners ? state.auction.loggedInOwners.length : 0;
+                statusTag.innerHTML = `<span class='text-red-500'>MASTER ADMIN CONTROL ACTIVE</span> <span class="ml-2 text-slate-400">| Owners Connected: ${currentLogins}/5</span>`;
+            } else if (state.userRole.startsWith('owner_')) {
+                statusTag.innerHTML = `<span class='text-blue-500'>WAR ROOM ACTIVE: ${teamConfig[state.userRole.replace('owner_', '')].name}</span>`;
+            } else {
+                statusTag.innerText = "View-Only Mode | Real-Time Sync Active";
+            }
+        }
+
+        // --- Admin Panel Functions ---
+        
+        function renderAdminPanel() {
+            const totalEl = document.getElementById('admin-total-players');
+            if (totalEl) totalEl.innerText = state.allPlayers.length || state.unassigned.length;
+
+            // Render PIN Grid Display
+            const pinGrid = document.getElementById('admin-pin-display-grid');
+            if (pinGrid) {
+                pinGrid.innerHTML = Object.keys(state.teamPins).map(team => `
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
+                        <p class="text-[10px] font-bold text-slate-500 uppercase mb-1 truncate">${teamConfig[team].name}</p>
+                        <p class="font-mono text-lg font-black text-blue-600 tracking-widest">${state.teamPins[team]}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Update Session Control UI
+            const btnToggle = document.getElementById('btn-toggle-session');
+            const statusText = document.getElementById('session-status-text');
+            if(btnToggle && statusText) {
+                if(state.auction.isSessionActive) {
+                    btnToggle.innerText = "Deactivate Session";
+                    btnToggle.className = "px-6 py-3 rounded-xl bg-red-600 text-white font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-red-700 transition-colors";
+                    statusText.innerHTML = "<span class='text-emerald-500 text-sm'>Currently: ACTIVE (Owners can login)</span>";
+                } else {
+                    btnToggle.innerText = "Start Auction Session";
+                    btnToggle.className = "px-6 py-3 rounded-xl bg-emerald-600 text-white font-bold text-xs uppercase tracking-widest shadow-lg hover:bg-emerald-700 transition-colors";
+                    statusText.innerHTML = "<span class='text-slate-500 text-sm'>Currently: OFFLINE (Logins blocked)</span>";
+                }
+            }
+
+            const p = state.unassigned[state.auction.playerIdx];
+            const apName = document.getElementById('ap-player-name');
+            if (apName && p) {
+                apName.innerText = p.name;
+                document.getElementById('ap-player-role').innerText = p.role;
+            } else if (apName) {
+                apName.innerText = 'Pool Empty';
+                document.getElementById('ap-player-role').innerText = 'All players drafted';
+            }
+
+            const assignBtns = document.getElementById('admin-assign-buttons');
+            if (assignBtns) {
+                assignBtns.innerHTML = '';
+                Object.keys(state.teams).forEach(team => {
+                    assignBtns.innerHTML += `<button onclick="adminAssignPlayer(${state.auction.playerIdx}, '${team}')" class="py-2.5 px-3 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 font-bold text-xs hover:bg-blue-600 hover:text-white transition-all truncate">${team}</button>`;
+                });
+            }
+
+            const tbody = document.getElementById('admin-unassigned-table');
+            if (tbody) {
+                if (state.unassigned.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="py-8 text-center text-slate-400 font-medium">✅ All players assigned!</td></tr>';
+                } else {
+                    tbody.innerHTML = state.unassigned.map((player, idx) => `
+                        <tr class="hover:bg-slate-50 transition-colors">
+                            <td class="py-3 px-4 text-center"><input type="checkbox" onchange="toggleUnassignedSelection('${getPlayerSelectionKey(player).replace(/'/g, "\\'")}', this.checked)" ${state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(player)) ? 'checked' : ''} class="h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500 cursor-pointer"></td>
+                            <td class="py-3 px-4 text-slate-400 font-mono text-xs">${idx + 1}</td>
+                            <td class="py-3 px-4 font-bold text-slate-900">${player.name}</td>
+                            <td class="py-3 px-4"><span class="bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold">${player.role}</span></td>
+                            <td class="py-3 px-4">
+                                <select onchange="if(this.value) { adminAssignPlayer(${idx}, this.value); this.value=''; }" class="text-xs border border-slate-200 rounded-lg px-2 py-1.5 bg-white text-slate-700 cursor-pointer">
+                                    <option value="">Assign →</option>
+                                    ${Object.keys(state.teams).map(t => `<option value="${t}">${t}</option>`).join('')}
+                                </select>
+                            </td>
+                        </tr>
+                    `).join('');
+                }
+            }
+
+            updateUnassignedSelectionUi();
+
+            const rosterDiv = document.getElementById('admin-roster-view');
+            if (rosterDiv) {
+                if (Object.keys(state.teams).every(team => getPlayersByTeam(team).length === 0)) {
+                    rosterDiv.innerHTML = '<p class="text-slate-400 text-sm col-span-full text-center py-6">No players assigned yet.</p>';
+                } else {
+                    rosterDiv.innerHTML = Object.keys(state.teams).map(team => {
+                        const roster = getPlayersByTeam(team);
+                        const conf = teamConfig[team];
+                        return `
+                            <div class="clean-card p-0 overflow-hidden border-slate-100">
+                                <div class="h-1.5 w-full bg-gradient-to-r ${conf.grad}"></div>
+                                <div class="p-4">
+                                    <h4 class="font-black text-slate-900 uppercase tracking-tight text-sm mb-2">${team}</h4>
+                                    <p class="text-xs text-slate-400 mb-3">${roster.length} player(s) drafted</p>
+                                    <ul class="space-y-1.5 max-h-48 overflow-y-auto pr-2">
+                                        ${roster.length === 0 ? '<li class="text-xs text-slate-400 italic">No players yet</li>' : roster.map(player => `
+                                            <li class="flex items-center justify-between gap-2 text-sm py-1 border-b border-slate-50 last:border-0">
+                                                <div class="truncate font-semibold text-slate-800">${formatName(player.name)}</div>
+                                                <button onclick="confirmAdminRemovePlayer('${team.replace(/'/g, "\\'")}', '${((player.mobile || '').toString()).replace(/'/g, "\\'")}', '${formatName(player.name).replace(/'/g, "\\'")}')" class="shrink-0 px-2 py-1 rounded bg-red-50 text-red-700 text-[10px] font-bold hover:bg-red-100">Remove</button>
+                                            </li>
+                                        `).join('')}
+                                    </ul>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+        }
+
+        function adminNextPlayer() {
+            if (state.unassigned.length === 0) return;
+            state.auction.playerIdx++;
+            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
+            renderAdminPanel();
+        }
+
+        async function adminAssignPlayer(index, teamName) {
+            const player = state.unassigned[index];
+            if (!player) return;
+            try {
+                const result = await assignPlayerToTeam(player, teamName, '$20');
+                if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
+                
+                await syncDataFromGoogleSheets();
+                renderAdminPanel();
+                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
+            } catch (error) {
+                showModal('Error', `<p class='text-center'>${error.message}</p>`);
+            }
+        }
+
+        function confirmAdminRemovePlayer(teamName, mobile, playerName) {
+            const player = findPlayerRecord(teamName, mobile, playerName);
+            if (!player) return showModal('Error', "Player not found. Sync data.");
+            
+            showModal('Remove Player', `
+                <div class="space-y-4">
+                    <div class="text-center"><p class="font-black text-slate-900 text-lg">${formatName(player.name)}</p><p class="text-slate-500 text-sm mt-1">${teamName}</p></div>
+                    <div class="grid gap-3">
+                        <button onclick="adminRemovePlayerAction('${teamName}', '${mobile}', '${playerName}', 'unassign')" class="w-full py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-sm font-bold">Move To Unassigned</button>
+                        <button onclick="adminRemovePlayerAction('${teamName}', '${mobile}', '${playerName}', 'delete')" class="w-full py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-bold">Delete Permanently</button>
+                    </div>
+                </div>
+            `);
+        }
+
+        async function adminRemovePlayerAction(teamName, mobile, playerName, mode) {
+            closeModal();
+            const player = findPlayerRecord(teamName, mobile, playerName);
+            if (!player) return;
+            try {
+                await removePlayerFromTeam(player, mode);
+                await syncDataFromGoogleSheets();
+                renderAdminPanel();
+            } catch (error) {
+                showModal('Error', "Removal failed.");
+            }
+        }
+
+        function toggleUnassignedSelection(key, checked) {
+            if (checked && !state.selectedUnassignedPlayers.includes(key)) state.selectedUnassignedPlayers.push(key);
+            else state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(k => k !== key);
+            updateUnassignedSelectionUi();
+        }
+
+        function toggleSelectAllUnassigned(checked) {
+            state.selectedUnassignedPlayers = checked ? state.unassigned.map(getPlayerSelectionKey) : [];
+            renderAdminPanel();
+        }
+
+        function updateUnassignedSelectionUi() {
+            const btn = document.getElementById('admin-delete-selected-btn');
+            const chk = document.getElementById('admin-select-all-unassigned-checkbox');
+            const cnt = state.selectedUnassignedPlayers.length;
+            if(btn) { btn.disabled = cnt === 0; btn.innerText = cnt > 0 ? `Delete Selected (${cnt})` : 'Delete Selected'; }
+            if(chk) { chk.checked = cnt > 0 && cnt === state.unassigned.length; chk.indeterminate = cnt > 0 && cnt < state.unassigned.length; }
+        }
+
+        function confirmBulkDeleteUnassigned() {
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            if (selected.length === 0) return;
+            showModal('Delete Players', `<div class="space-y-4 text-center"><p class="font-bold text-red-600">${selected.length} players will be permanently deleted.</p><button onclick="bulkDeleteSelectedUnassigned()" class="w-full py-3 rounded-xl bg-red-600 text-white font-bold">Confirm</button></div>`);
+        }
+
+        async function bulkDeleteSelectedUnassigned() {
+            closeModal();
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            for (const p of selected) await removePlayerFromTeam(p, 'delete');
+            state.selectedUnassignedPlayers = [];
+            await syncDataFromGoogleSheets();
+            renderAdminPanel();
+        }
+
+        function downloadPlayerDataCSV() {
+            if (state.allPlayers.length === 0) return showModal("No Data", "No players to export.");
+            const headers = ['Name', 'Mobile', 'Role', 'PIN', 'Team', 'Price'];
+            let csv = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + state.allPlayers.map(p => `"${p.name}","${p.mobile||''}","${p.role||''}","${p.pin||''}","${p.team||''}","${p.price||''}"`).join("\n");
+            const link = document.createElement("a"); link.setAttribute("href", encodeURI(csv)); link.setAttribute("download", "dpl_players.csv");
+            document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        // --- Live Score & Chart ---
+        function loadLiveScoreState() {
+            const saved = localStorage.getItem(LIVE_SCORE_STORAGE_KEY);
+            if (saved) state.liveScore = { ...state.liveScore, ...JSON.parse(saved) };
+        }
+        function saveLiveScoreState() { localStorage.setItem(LIVE_SCORE_STORAGE_KEY, JSON.stringify(state.liveScore)); }
+        
+        function applyLiveScoreState() {
+            const map = { 'live-team-1': 'team1', 'live-score-1': 'score1', 'live-team-2': 'team2', 'live-score-2': 'score2', 'live-batter-1': 'batter', 'live-bowler': 'bowler', 'ls-team1': 'team1', 'ls-score1': 'score1', 'ls-team2': 'team2', 'ls-score2': 'score2', 'ls-batter1': 'batter', 'ls-bowler': 'bowler' };
+            Object.keys(map).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    if (el.tagName === 'INPUT') el.value = state.liveScore[map[id]];
+                    else if (id.includes('score') && state.liveScore[map[id]].match(/\//)) {
+                        const parts = state.liveScore[map[id]].split('/');
+                        el.innerHTML = `${parts[0]}<span class="text-3xl md:text-4xl text-emerald-200">/${parts[1] || '0'}</span>`;
+                    } else el.innerText = state.liveScore[map[id]];
+                }
+            });
+        }
+        
+        function forceScoreUpdate() {
+            state.liveScore = { team1: document.getElementById('ls-team1').value, score1: document.getElementById('ls-score1').value, team2: document.getElementById('ls-team2').value, score2: document.getElementById('ls-score2').value, batter: document.getElementById('ls-batter1').value, bowler: document.getElementById('ls-bowler').value };
+            saveLiveScoreState(); applyLiveScoreState();
+            showModal('⚡ Score Updated', "<p class='text-center'>Live feed pushed.</p>");
+        }
+
+        function renderChart() {
+            const ctx = document.getElementById('statsChart');
+            if(!ctx) return;
+            Chart.defaults.font.family = "'Outfit', sans-serif";
+            new Chart(ctx.getContext('2d'), {
+                type: 'bar',
+                data: { labels: ['Season 1', 'Season 2', 'Season 3'], datasets: [{ label: 'Runs', data: [687, 717, 0], backgroundColor: '#2563eb' }, { label: 'Wickets', data: [112, 95, 0], backgroundColor: '#10b981' }] },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+            state.chartInitialized = true;
+        }
+
+        // --- Hub Forms ---
+        function handleVillageChange(s) { if (s.value === 'Other') { showModal("Blocked", "<p class='text-center'>Outsiders not allowed.</p>"); s.value = ""; } }
+        async function handlePlayerRegistration(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; btn.disabled = true;
+            try {
+                const res = await fetch(GOOGLE_APP_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ name: formatName(document.getElementById('reg-name').value), mobile: document.getElementById('reg-mobile').value, role: document.getElementById('reg-role').value, pin: document.getElementById('reg-pin').value }) });
+                const result = await res.json();
+                if (result.status === 'success') { switchInnerTab('hub', 'selection'); showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); e.target.reset(); }
+                else showModal("Error", result.message);
+            } finally { btn.innerText = "Submit Application"; btn.disabled = false; }
+        }
+        async function handlePlayerLogin(e) {
+            e.preventDefault();
+            const btn = e.target.querySelector('button'); btn.innerText = "Checking..."; btn.disabled = true;
+            try {
+                const res = await fetch(`${GOOGLE_APP_SCRIPT_URL}?action=login&mobile=${document.getElementById('login-mobile').value}&pin=${document.getElementById('login-pin').value}`);
+                const result = await res.json();
+                if (result.status === 'success') { state.loggedInPlayer = result.player; switchInnerTab('hub', 'dash'); syncLoggedInPlayerDashboard(); e.target.reset(); }
+                else showModal("Error", result.message);
+            } finally { btn.innerText = "Login"; btn.disabled = false; }
+        }
+        function handlePlayerLogout() { state.loggedInPlayer = null; switchInnerTab('hub', 'selection'); }
+
+        function syncLoggedInPlayerDashboard() {
+            if (!state.loggedInPlayer) return;
+            const p = getLoggedInPlayerRecord() || state.loggedInPlayer;
+            const team = (p.team||'').trim();
+            document.getElementById('profile-initial').innerText = p.name.charAt(0);
+            document.getElementById('profile-name').innerText = formatName(p.name);
+            document.getElementById('profile-role').innerText = p.role;
+            document.getElementById('profile-mobile').innerText = p.mobile;
+            if(!isUnassignedTeam(team)) {
+                document.getElementById('profile-welcome').innerHTML = `Welcome In | ${team}`;
+                document.getElementById('profile-status-text').innerText = team;
+                document.getElementById('profile-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-500';
+            } else {
+                document.getElementById('profile-welcome').innerText = `Welcome In`;
+                document.getElementById('profile-status-text').innerText = 'Awaiting Bid';
+                document.getElementById('profile-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse';
+            }
+        }
+        function getLoggedInPlayerRecord() { return state.allPlayers.find(p => p.mobile == state.loggedInPlayer.mobile); }
+        function switchInnerTab(g, t) { document.querySelectorAll(`[id^="content-${g}-"]`).forEach(e => e.classList.add('hide')); document.getElementById(`content-${g}-${t}`).classList.remove('hide'); }
+        function showTeamModal(t) { showModal(`${t} Roster`, `<ul class="text-sm space-y-1">${state.teams[t].length ? state.teams[t].map(p=>`<li>${p}</li>`).join('') : 'No players'}</ul>`); }
+        function showModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-body').innerHTML = c; const m = document.getElementById('custom-modal'), b = document.getElementById('modal-content-box'); m.classList.remove('hide'); setTimeout(() => { b.classList.remove('scale-95', 'opacity-0'); }, 10); }
+        function closeModal() { const m = document.getElementById('custom-modal'), b = document.getElementById('modal-content-box'); b.classList.add('scale-95', 'opacity-0'); setTimeout(() => m.classList.add('hide'), 300); }
+
+        // --- Navigation Logic ---
+        function navigateTo(viewId) {
+            toggleMobileMenu(false);
+            document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
+            document.getElementById(`view-${viewId}`).classList.add('active-view');
+            document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => { if (el.dataset.target === viewId) el.classList.add('active'); else el.classList.remove('active'); });
+            window.scrollTo(0, 0);
+
+            if (viewId === 'auction') { loadAuctionState(); renderAuctionUI(); startTimerLoop(); } else { if(animationFrameId) cancelAnimationFrame(animationFrameId); }
+            if (viewId === 'teams') renderTeams();
+            if (viewId === 'stats' && !state.chartInitialized) renderChart();
+            if (viewId === 'adminpanel') renderAdminPanel();
+        }
+
+        function switchAdminTab(type) {
+            document.getElementById('tab-portal-owner').className = type === 'owner' ? "flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg bg-white shadow-sm text-slate-900 transition-all" : "flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg text-slate-500 hover:text-slate-700 transition-all";
+            document.getElementById('tab-portal-master').className = type === 'master' ? "flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg bg-white shadow-sm text-slate-900 transition-all" : "flex-1 py-3 text-sm font-bold uppercase tracking-widest rounded-lg text-slate-500 hover:text-slate-700 transition-all";
+            document.getElementById('form-portal-owner').classList.toggle('hide', type !== 'owner');
+            document.getElementById('form-portal-master').classList.toggle('hide', type !== 'master');
+        }
+
+        function handleOwnerLogin(e) {
+            e.preventDefault(); 
+            const team = document.getElementById('owner-team-select').value; 
+            const pin = document.getElementById('owner-pin').value;
+            
+            if (!state.auction.isSessionActive) {
+                return showModal("Auction Locked", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🔒</span><h3 class='font-bold text-slate-800 text-xl'>Session Offline</h3><p class='text-slate-500 mt-2'>The Master Admin has not started the auction session yet. Please wait.</p></div>");
+            }
+
+            if (team && state.teamPins[team] && state.teamPins[team] === pin) { 
+                state.userRole = `owner_${team}`; 
+                if (!state.auction.loggedInOwners) state.auction.loggedInOwners = [];
+                if (!state.auction.loggedInOwners.includes(team)) {
+                    state.auction.loggedInOwners.push(team);
+                    saveAuctionState();
+                }
+                showModal("Access Granted", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>💼</span><h3 class='font-bold text-slate-800 text-xl'>Welcome to the War Room</h3><p class='text-slate-500 mt-2'>You have bidding rights for ${teamConfig[team].name}.</p></div>`); 
+                navigateTo('auction'); 
+            } else { 
+                showModal("Access Denied", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>❌</span><h3 class='font-bold text-red-600 text-xl'>Invalid PIN</h3></div>"); 
+            }
+        }
+
+        function handleAdminLogin(e) {
+            e.preventDefault(); const user = document.getElementById('admin-username').value.toLowerCase(); const pass = document.getElementById('admin-password').value;
+            if (user === 'admin' && pass === '1010') { state.userRole = 'admin'; state.isAdmin = true; showModal("Control Unlocked", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚙️</span><h3 class='font-bold text-slate-800 text-xl'>Admin Mode Active</h3><p class='text-slate-500 mt-2'>You now control the auction flow.</p></div>`); navigateTo('adminpanel'); } 
+            else showModal("Access Denied", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>❌</span><h3 class='font-bold text-red-600 text-xl'>Invalid Credentials</h3></div>");
+        }
+        
+        function handleAdminLogout() {
+            if (state.userRole.startsWith('owner_')) {
+                const team = state.userRole.replace('owner_', '');
+                if (state.auction.loggedInOwners) {
+                    state.auction.loggedInOwners = state.auction.loggedInOwners.filter(t => t !== team);
+                    saveAuctionState();
+                }
+            }
+            state.isAdmin = false; state.userRole = 'viewer'; document.getElementById('admin-login-form')?.reset(); navigateTo('admin'); showModal("Logged Out", "Session Terminated");
+        }
+
+        function toggleMobileMenu(forceState) {
+            const nav = document.getElementById('mobile-nav'); const isOpen = typeof forceState === 'boolean' ? forceState : nav.classList.contains('translate-x-full');
+            if (isOpen) { nav.classList.remove('translate-x-full'); document.body.style.overflow = 'hidden'; } else { nav.classList.add('translate-x-full'); document.body.style.overflow = ''; }
+        }
+
+        // Init
+        loadAuctionState();
+        loadLiveScoreState();
+        applyLiveScoreState();
+        syncDataFromGoogleSheets();
+        setInterval(syncDataFromGoogleSheets, 30000);
+    </script>
+</body>
+</html>
