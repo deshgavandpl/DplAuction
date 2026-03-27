@@ -949,7 +949,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getDatabase, ref, set, get, update, remove, onValue, child } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
 
         // --- 1. Master State ---
         const state = {
@@ -1003,16 +1003,16 @@
 
         let app, auth, db, isFirebaseReady = false;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'dpl-central-app';
-        let auctionDocRef, liveScoreDocRef, playersColRef;
+        let auctionRef, liveScoreRef, playersRef;
 
         try {
             app = initializeApp(firebaseConfig);
             auth = getAuth(app);
-            db = getFirestore(app);
+            db = getDatabase(app);
             
-            auctionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_auction_sync');
-            liveScoreDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_livescore_sync');
-            playersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'players');
+            auctionRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_auction_sync`);
+            liveScoreRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_livescore_sync`);
+            playersRef = ref(db, `artifacts/${appId}/public/data/players`);
         } catch (e) { console.error("Firebase init failed", e); }
 
         async function initFirebase() {
@@ -1032,43 +1032,54 @@
                     try {
                         await signInAnonymously(auth);
                     } catch (err) {
-                        console.warn("Anonymous auth not enabled:", err.message);
-                        if (err.code === 'auth/configuration-not-found') {
+                        console.warn("Anonymous auth blocked by preview domain:", err.message);
+                        
+                        // Force the real-time listeners to setup anyway!
+                        if (!isFirebaseReady) {
+                            isFirebaseReady = true;
+                            setupRealtimeListeners();
+                        }
+                        
+                        if (err.code === 'auth/configuration-not-found' || err.code === 'auth/unauthorized-domain' || err.code === 'auth/operation-not-allowed') {
                             setTimeout(() => {
-                                showModal("Firebase Setup Required", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚠️</span><h3 class='font-bold text-red-600 text-xl'>Authentication Disabled</h3><p class='text-slate-500 mt-2'>Please go to your Firebase Console -> Authentication -> Sign-in Method, and enable <b>Anonymous</b> sign-in to allow the app to sync data.</p></div>");
+                                showModal("Firebase Notice", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛡️</span><h3 class='font-bold text-slate-800 text-xl'>Bypassing Domain Lock</h3><p class='text-slate-500 mt-2 text-sm'>Firebase Auth blocks unknown preview domains or might not be enabled. We have bypassed this so you can test the auction.<br><br><b>Note:</b> Your Realtime Database Rules must be set to (.read: true, .write: true) for this to work.</p></div>");
                             }, 1000);
                         }
                     }
                 }
                 
                 onAuthStateChanged(auth, (user) => {
-                    // Initialize regardless of user state to allow test-mode unauthenticated access
                     if (!isFirebaseReady) {
                         isFirebaseReady = true;
-                        if(user) {
-                            setupRealtimeListeners();
-                        } else {
-                            console.warn("No valid user session. Realtime sync disabled.");
-                        }
+                        setupRealtimeListeners();
                     }
                 });
-            } catch(e) { console.warn("Auth error:", e.message); }
+            } catch(e) { 
+                console.warn("Auth error:", e.message); 
+                if (!isFirebaseReady) {
+                    isFirebaseReady = true;
+                    setupRealtimeListeners();
+                }
+            }
         }
 
         function setupRealtimeListeners() {
             // 1. Sync Players Collection (Replaces Google Sheets)
-            onSnapshot(playersColRef, (snapshot) => {
+            onValue(playersRef, (snapshot) => {
                 const playersList = [];
-                snapshot.forEach(doc => {
-                    playersList.push({ id: doc.id, ...doc.data() });
+                snapshot.forEach(childSnap => {
+                    playersList.push({ id: childSnap.key, ...childSnap.val() });
                 });
                 populateStateFromPlayers(playersList);
             }, (error) => console.error("Players sync error:", error));
 
             // 2. Sync Auction State
-            onSnapshot(auctionDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    state.auction = { ...state.auction, ...docSnap.data() };
+            onValue(auctionRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    state.auction = { ...state.auction, ...snapshot.val() };
+                    // RTDB specific handling for arrays
+                    if(!state.auction.passedTeams) state.auction.passedTeams = [];
+                    if(!state.auction.loggedInOwners) state.auction.loggedInOwners = [];
                 } else {
                     saveAuctionState(); 
                 }
@@ -1077,9 +1088,9 @@
             }, (error) => console.error("Auction sync error:", error));
 
             // 3. Sync Live Score
-            onSnapshot(liveScoreDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    state.liveScore = { ...state.liveScore, ...docSnap.data() };
+            onValue(liveScoreRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    state.liveScore = { ...state.liveScore, ...snapshot.val() };
                     applyLiveScoreState();
                 }
             }, (error) => console.error("Score sync error:", error));
@@ -1087,12 +1098,12 @@
 
         function saveAuctionState() {
             if (!isFirebaseReady) return;
-            setDoc(auctionDocRef, state.auction).catch(e => console.error(e));
+            set(auctionRef, state.auction).catch(e => console.error(e));
         }
 
         function saveLiveScoreState() {
             if (!isFirebaseReady) return;
-            setDoc(liveScoreDocRef, state.liveScore).catch(e => console.error(e));
+            set(liveScoreRef, state.liveScore).catch(e => console.error(e));
         }
 
 
@@ -1182,19 +1193,19 @@
 
         async function assignPlayerToTeam(player, teamName, price = null) {
             if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
-            const playerRef = doc(playersColRef, player.mobile);
+            const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
             const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
-            await updateDoc(playerRef, { team: teamName, price: priceVal });
+            await update(pRef, { team: teamName, price: priceVal });
             return { status: 'success' };
         }
 
         async function removePlayerFromTeam(player, mode) {
             if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
-            const playerRef = doc(playersColRef, player.mobile);
+            const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
             if (mode === 'delete') {
-                await deleteDoc(playerRef);
+                await remove(pRef);
             } else {
-                await updateDoc(playerRef, { team: 'Unassigned', price: 20 });
+                await update(pRef, { team: 'Unassigned', price: 20 });
             }
             return { status: 'success' };
         }
@@ -1365,8 +1376,6 @@
 
             if (team && player) {
                 try {
-                    // Update document directly in Firestore. 
-                    // This will trigger onSnapshot instantly to update all screens.
                     await assignPlayerToTeam(player, team, state.auction.currentBid);
                 } catch (e) {
                     console.error("Backend assign error:", e);
@@ -1859,12 +1868,12 @@
                 const role = document.getElementById('reg-role').value;
                 const pin = document.getElementById('reg-pin').value;
 
-                const playerRef = doc(playersColRef, mobile);
-                const docSnap = await getDoc(playerRef);
-                if (docSnap.exists()) {
+                const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
+                const snapshot = await get(playerRef);
+                if (snapshot.exists()) {
                     showModal("Error", "Mobile number is already registered.");
                 } else {
-                    await setDoc(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20 });
+                    await set(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20 });
                     switchInnerTab('hub', 'selection'); 
                     showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); 
                     e.target.reset();
@@ -1882,11 +1891,11 @@
                 const mobile = document.getElementById('login-mobile').value;
                 const pin = document.getElementById('login-pin').value;
                 
-                const playerRef = doc(playersColRef, mobile);
-                const docSnap = await getDoc(playerRef);
+                const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
+                const snapshot = await get(playerRef);
                 
-                if (docSnap.exists() && docSnap.data().pin === pin) {
-                    state.loggedInPlayer = docSnap.data(); 
+                if (snapshot.exists() && snapshot.val().pin === pin) {
+                    state.loggedInPlayer = snapshot.val(); 
                     switchInnerTab('hub', 'dash'); 
                     syncLoggedInPlayerDashboard(); 
                     e.target.reset();
