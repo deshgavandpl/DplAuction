@@ -1630,13 +1630,16 @@
 
             const grid = document.getElementById('franchise-tables-grid');
             if(!grid) return;
+            const currentScroll = window.scrollY;
             grid.innerHTML = '';
             
             const isOwnerView = state.userRole.startsWith('owner_');
             grid.className = isOwnerView 
-                ? "max-w-sm mx-auto mt-8" 
-                : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 mt-8";
+                ? "max-w-sm mx-auto mt-4 sm:mt-8 min-h-[250px]" 
+                : "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mt-4 sm:mt-8 min-h-[250px]";
             
+            let gridHTML = '';
+
             Object.keys(teamConfig).forEach(team => {
                 try {
                     const conf = teamConfig[team];
@@ -1662,14 +1665,14 @@
                                 buttonHTML = `<button disabled class="w-full py-3 rounded-xl bg-slate-800/50 text-slate-400 font-black uppercase text-xs cursor-not-allowed border border-slate-700/50 shadow-inner">Highest Bidder</button>`;
                             } else {
                                 buttonHTML = `
-                                <div class="flex flex-col gap-2 w-full">
-                                    <div class="grid grid-cols-2 gap-2 w-full">
-                                        <button onclick="placeOwnerBid('${team}', 10)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $10</button>
-                                        <button onclick="placeOwnerBid('${team}', 20)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $20</button>
-                                        <button onclick="placeOwnerBid('${team}', 50)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $50</button>
-                                        <button onclick="placeOwnerBid('${team}', 100)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $100</button>
+                                <div class="flex flex-col gap-1.5 sm:gap-2 w-full">
+                                    <div class="grid grid-cols-2 gap-1.5 sm:gap-2 w-full">
+                                        <button onclick="placeOwnerBid('${team}', 10)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$10</button>
+                                        <button onclick="placeOwnerBid('${team}', 20)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$20</button>
+                                        <button onclick="placeOwnerBid('${team}', 50)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$50</button>
+                                        <button onclick="placeOwnerBid('${team}', 100)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$100</button>
                                     </div>
-                                    <button onclick="ownerPassBid('${team}')" class="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-black uppercase tracking-widest text-[10px] transition-all">Fold / Pass</button>
+                                    <button onclick="ownerPassBid('${team}')" class="w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all">Fold / Pass</button>
                                 </div>`;
                             }
                         } else {
@@ -1691,37 +1694,37 @@
                         buttonHTML = `<div class="h-8"></div>`; // spacer
                     }
 
-                    grid.innerHTML += `
-                        <div class="franchise-table p-4 sm:p-6 rounded-[2rem] border bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center text-center transition-all duration-500 ${isHighest ? 'active-bidder transform -translate-y-2' : (hasPassed ? 'opacity-40 grayscale border-red-900/30' : 'border-slate-700/50 hover:border-slate-500/50')}" style="--team-glow: ${conf.glow}; --team-border: ${conf.border}; box-shadow: ${isHighest ? `0 20px 40px -10px ${conf.glow}, inset 0 0 20px rgba(255,255,255,0.05)` : '0 4px 6px -1px rgba(0,0,0,0.1)'}; border-color: ${isHighest ? conf.border : ''}">
+                    gridHTML += `
+                        <div class="franchise-table p-3 sm:p-6 rounded-[1.5rem] sm:rounded-[2rem] border bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center text-center transition-all duration-500 ${isHighest ? 'active-bidder transform -translate-y-2' : (hasPassed ? 'opacity-40 grayscale border-red-900/30' : 'border-slate-700/50 hover:border-slate-500/50')}" style="--team-glow: ${conf.glow}; --team-border: ${conf.border}; box-shadow: ${isHighest ? `0 20px 40px -10px ${conf.glow}, inset 0 0 20px rgba(255,255,255,0.05)` : '0 4px 6px -1px rgba(0,0,0,0.1)'}; border-color: ${isHighest ? conf.border : ''}">
                             
-                            ${isConnected ? '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span><span class="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Live</span></div>' : '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span><span class="text-[8px] font-black text-red-400 uppercase tracking-widest">Away</span></div>'}
+                            ${isConnected ? '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span><span class="hidden sm:inline text-[8px] font-black text-emerald-400 uppercase tracking-widest">Live</span></div>' : '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span><span class="hidden sm:inline text-[8px] font-black text-red-400 uppercase tracking-widest">Away</span></div>'}
                             
-                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl mb-3 bg-gradient-to-br ${conf.grad} flex items-center justify-center text-white font-black italic text-2xl shadow-lg transform -skew-x-6 ring-4 ring-slate-900">
+                            <div class="w-10 h-10 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl mb-2 sm:mb-3 bg-gradient-to-br ${conf.grad} flex items-center justify-center text-white font-black italic text-lg sm:text-2xl shadow-lg transform -skew-x-6 ring-2 sm:ring-4 ring-slate-900">
                                 <span class="transform skew-x-6">${conf.name.charAt(0)}</span>
                             </div>
                             
-                            <h4 class="font-black text-white text-sm sm:text-base uppercase tracking-widest drop-shadow-md">${conf.name}</h4>
+                            <h4 class="font-black text-white text-xs sm:text-base uppercase tracking-widest drop-shadow-md">${conf.name}</h4>
                             
-                            <div class="flex gap-2 mt-3 mb-2 w-full justify-center">
-                                <div class="flex flex-col items-center bg-slate-950/50 rounded-xl px-3 py-1.5 border border-slate-800/50 w-1/2">
-                                    <span class="text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Purse</span>
-                                    <span class="text-xs font-black text-emerald-400">$${remainingPurse}</span>
+                            <div class="flex gap-1 sm:gap-2 mt-2 sm:mt-3 mb-2 w-full justify-center">
+                                <div class="flex flex-col items-center bg-slate-950/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 border border-slate-800/50 w-1/2">
+                                    <span class="text-[7px] sm:text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Purse</span>
+                                    <span class="text-[10px] sm:text-xs font-black text-emerald-400">$${remainingPurse}</span>
                                 </div>
-                                <div onclick="showTeamModal('${team}')" class="flex flex-col items-center bg-slate-950/50 rounded-xl px-3 py-1.5 border border-slate-800/50 w-1/2 cursor-pointer hover:bg-slate-800/80 transition-colors" title="View Roster">
-                                    <span class="text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Squad</span>
-                                    <span class="text-xs font-black text-blue-400">${currentCount}/15</span>
+                                <div onclick="showTeamModal('${team}')" class="flex flex-col items-center bg-slate-950/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 border border-slate-800/50 w-1/2 cursor-pointer hover:bg-slate-800/80 transition-colors" title="View Roster">
+                                    <span class="text-[7px] sm:text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Squad</span>
+                                    <span class="text-[10px] sm:text-xs font-black text-blue-400">${currentCount}/15</span>
                                 </div>
                             </div>
                             
                             ${isHighest ? `
-                            <div class="mt-2 mb-1 w-full">
-                                <div class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
-                                    <span class="w-2 h-2 rounded-full bg-[#00e5ff] animate-pulse"></span>
-                                    <span class="text-[10px] font-black uppercase tracking-[0.2em]">Current Leader</span>
+                            <div class="mt-1 sm:mt-2 mb-1 w-full">
+                                <div class="inline-flex items-center justify-center gap-1.5 w-full py-1 sm:py-1.5 rounded-md sm:rounded-lg bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                                    <span class="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-[#00e5ff] animate-pulse"></span>
+                                    <span class="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em]">Current Leader</span>
                                 </div>
-                            </div>` : '<div class="h-8 mt-2 mb-1"></div>'}
+                            </div>` : '<div class="h-6 sm:h-8 mt-1 sm:mt-2 mb-1"></div>'}
                             
-                            <div class="w-full mt-2 pt-3 border-t border-slate-800/50">
+                            <div class="w-full mt-2 pt-2 sm:pt-3 border-t border-slate-800/50">
                                 ${buttonHTML}
                             </div>
                         </div>
@@ -1730,6 +1733,8 @@
                     console.error("Error rendering team:", team, e);
                 }
             });
+            grid.innerHTML = gridHTML;
+            window.scrollTo(0, currentScroll);
 
             // Handle bottom section (Teams buttons and Upcoming Pool)
             const teamsBtns = document.getElementById('auction-teams-buttons');
