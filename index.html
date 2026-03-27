@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 
 <head>
@@ -260,9 +260,10 @@
                 <div class="absolute bottom-0 right-1/2 w-[500px] h-[500px] bg-[#00e5ff]/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
                 <div class="hero-overlay pointer-events-none z-0 !bg-gradient-to-r !from-slate-950/70 !via-slate-900/35 !to-slate-900/0"></div>
                 
-                <div class="relative z-10 max-w-xl w-full p-6 sm:p-8 md:p-12 lg:p-16">
+                <!-- Left Side: Text -->
+                <div class="relative z-10 max-w-xl w-full p-6 sm:p-8 md:p-12 lg:p-16 md:w-1/2">
                     <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] font-black text-[10px] sm:text-xs tracking-[0.2em] uppercase mb-6 sm:mb-8 transform -skew-x-12 shadow-[0_0_15px_rgba(0,229,255,0.2)]">
-                        <span class="animate-pulse">⚡</span> High-Voltage T10 Cricket
+                        <span class="animate-pulse text-sm">⚡</span> High-Voltage T10 Cricket
                     </div>
                     <h1 class="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-black mb-4 sm:mb-6 leading-[0.9] tracking-tighter uppercase transform -skew-x-6">
                         <span class="text-transparent bg-clip-text bg-gradient-to-r from-white to-slate-300 drop-shadow-lg">Deshgavhan</span><br>
@@ -275,6 +276,15 @@
                     <div class="flex flex-col sm:flex-row flex-wrap gap-4 sm:gap-5">
                         <button onclick="navigateTo('hub')" class="w-full sm:w-auto px-6 sm:px-8 py-4 rounded-xl bg-gradient-to-r from-[#00e5ff] to-blue-600 text-slate-950 font-black italic uppercase tracking-wider hover:from-cyan-400 hover:to-blue-500 transition-all shadow-[0_0_20px_rgba(0,229,255,0.4)] hover:shadow-[0_0_40px_rgba(0,229,255,0.6)] transform hover:-translate-y-1 hover:scale-105 skew-x-[0deg] sm:skew-x-[-8deg]"><span class="block transform sm:skew-x-[8deg]">⚡ Enter the Draft</span></button>
                         <button onclick="navigateTo('auction')" class="w-full sm:w-auto px-6 sm:px-8 py-4 rounded-xl bg-transparent border-2 border-[#00e5ff]/50 text-[#00e5ff] font-black italic uppercase tracking-wider hover:bg-[#00e5ff]/10 hover:border-[#00e5ff] transition-all transform hover:-translate-y-1 hover:scale-105 skew-x-[0deg] sm:skew-x-[-8deg] shadow-[inset_0_0_20px_rgba(0,229,255,0)] hover:shadow-[inset_0_0_20px_rgba(0,229,255,0.2)]"><span class="block transform sm:skew-x-[8deg]">🔴 Live Bidding</span></button>
+                    </div>
+                </div>
+
+                <!-- Right Side: India Map Floating Container -->
+                <div class="relative z-10 w-full md:w-1/2 p-6 sm:p-8 md:pr-12 lg:pr-16 flex items-center justify-center mt-[-2rem] md:mt-0 mb-8 md:mb-0">
+                    <div class="hero-floating hero-glow-box w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] aspect-square bg-[#f8fafc] rounded-[2.5rem] border-[4px] border-slate-900 overflow-hidden shadow-2xl p-2 relative group/map">
+                        <!-- Inner soft border effect -->
+                        <div class="absolute inset-0 rounded-[2.25rem] border-2 border-white/50 mix-blend-overlay pointer-events-none"></div>
+                        <img src="india.jpg" alt="DPL India Map" class="w-full h-full object-cover rounded-[2rem] transition-transform duration-700 group-hover/map:scale-105 filter contrast-[1.05] drop-shadow-md">
                     </div>
                 </div>
             </div>
@@ -969,8 +979,8 @@
             selectedUnassignedPlayers: [],
             chartInitialized: false,
             
-            isAdmin: false, 
-            userRole: 'viewer', 
+            isAdmin: sessionStorage.getItem('dpl_isAdmin') === 'true', 
+            userRole: sessionStorage.getItem('dpl_userRole') || 'viewer', 
             
             // Firebase Synchronized
             auction: {
@@ -1947,6 +1957,9 @@
             if (viewId === 'teams') renderTeams();
             if (viewId === 'stats' && !state.chartInitialized) renderChart();
             if (viewId === 'adminpanel') renderAdminPanel();
+
+            // Save the view to localStorage so it stays across page refreshes!
+            localStorage.setItem('dpl_current_view', viewId);
         }
 
         function switchAdminTab(type) {
@@ -1967,6 +1980,8 @@
 
             if (team && state.teamPins[team] && state.teamPins[team] === pin) { 
                 state.userRole = `owner_${team}`; 
+                sessionStorage.setItem('dpl_userRole', state.userRole); // Save to session
+                
                 if (!state.auction.loggedInOwners) state.auction.loggedInOwners = [];
                 if (!state.auction.loggedInOwners.includes(team)) {
                     state.auction.loggedInOwners.push(team);
@@ -1981,7 +1996,15 @@
 
         function handleAdminLogin(e) {
             e.preventDefault(); const user = document.getElementById('admin-username').value.toLowerCase(); const pass = document.getElementById('admin-password').value;
-            if (user === 'admin' && pass === '1010') { state.userRole = 'admin'; state.isAdmin = true; showModal("Control Unlocked", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚙️</span><h3 class='font-bold text-slate-800 text-xl'>Admin Mode Active</h3><p class='text-slate-500 mt-2'>You now control the auction flow.</p></div>`); navigateTo('adminpanel'); } 
+            if (user === 'admin' && pass === '1010') { 
+                state.userRole = 'admin'; 
+                state.isAdmin = true; 
+                sessionStorage.setItem('dpl_userRole', 'admin'); // Save to session
+                sessionStorage.setItem('dpl_isAdmin', 'true');   // Save to session
+                
+                showModal("Control Unlocked", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚙️</span><h3 class='font-bold text-slate-800 text-xl'>Admin Mode Active</h3><p class='text-slate-500 mt-2'>You now control the auction flow.</p></div>`); 
+                navigateTo('adminpanel'); 
+            } 
             else showModal("Access Denied", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>❌</span><h3 class='font-bold text-red-600 text-xl'>Invalid Credentials</h3></div>");
         }
         
@@ -1993,7 +2016,16 @@
                     saveAuctionState();
                 }
             }
-            state.isAdmin = false; state.userRole = 'viewer'; document.getElementById('admin-login-form')?.reset(); navigateTo('admin'); showModal("Logged Out", "Session Terminated");
+            state.isAdmin = false; 
+            state.userRole = 'viewer'; 
+            
+            // Clear sessions
+            sessionStorage.removeItem('dpl_userRole');
+            sessionStorage.removeItem('dpl_isAdmin');
+            
+            document.getElementById('admin-login-form')?.reset(); 
+            navigateTo('admin'); 
+            showModal("Logged Out", "Session Terminated");
         }
 
         function toggleMobileMenu(forceState) {
@@ -2033,6 +2065,12 @@
         window.adminResetCurrentAuction = adminResetCurrentAuction;
         window.confirmBulkDeleteUnassigned = confirmBulkDeleteUnassigned;
         window.bulkDeleteSelectedUnassigned = bulkDeleteSelectedUnassigned;
+
+        // Restore the last active view if it exists in memory
+        const lastView = localStorage.getItem('dpl_current_view');
+        if (lastView && document.getElementById(`view-${lastView}`)) {
+            navigateTo(lastView);
+        }
 
         // Init
         initFirebase();
