@@ -850,7 +850,7 @@
                                     </tr>
                                 </thead>
                                 <tbody id="admin-unassigned-table" class="divide-y divide-slate-100 text-slate-700">
-                                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Syncing from Google Sheets...</td></tr>
+                                    <tr><td colspan="5" class="py-6 text-center text-slate-400">Loading Database...</td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1063,7 +1063,7 @@
         }
 
         function setupRealtimeListeners() {
-            // 1. Sync Players Collection (Replaces Google Sheets)
+            // 1. Sync Players Collection
             onValue(playersRef, (snapshot) => {
                 const playersList = [];
                 snapshot.forEach(childSnap => {
