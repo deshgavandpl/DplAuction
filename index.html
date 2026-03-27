@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 
 <head>
@@ -14,6 +14,26 @@
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- ANTI-FLICKER SCRIPT (Runs instantly to set correct view before CSS paints) -->
+    <script>
+        (function() {
+            const savedView = localStorage.getItem('dpl_current_view');
+            if (savedView && savedView !== 'home') {
+                document.documentElement.style.visibility = 'hidden';
+                window.addEventListener('DOMContentLoaded', () => {
+                    document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
+                    const target = document.getElementById('view-' + savedView);
+                    if(target) target.classList.add('active-view');
+                    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => {
+                        if (el.dataset.target === savedView) el.classList.add('active');
+                        else el.classList.remove('active');
+                    });
+                    document.documentElement.style.visibility = '';
+                });
+            }
+        })();
+    </script>
 
     <style>
         body {
@@ -92,7 +112,7 @@
         .live-dot { height: 10px; width: 10px; background-color: #ef4444; border-radius: 50%; display: inline-block; animation: pulse-red 1.5s infinite; }
         @keyframes pulse-red { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
         
-        .hero-bg { background: url('image_0.jpg') center/cover no-repeat; }
+        .hero-bg { background: url('image_0.jpg') center/cover no-repeat, #0f172a; }
         .hero-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(to right, rgba(10, 25, 47, 0.95) 0%, rgba(10, 25, 47, 0.7) 100%); }
         .hero-floating { animation: floating 4s ease-in-out infinite; filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.4)); }
         .hero-glow-box { box-shadow: 0 0 50px rgba(212, 175, 55, 0.4), inset 0 0 20px rgba(212, 175, 55, 0.5); }
@@ -119,21 +139,17 @@
         .timer-warning { background: linear-gradient(90deg, #ef4444, #f97316) !important; animation: pulse-red 0.5s infinite; }
         
         .franchise-table {
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            /* Heavy transitions for Gen Z aesthetic */
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease, filter 0.4s ease;
         }
+        
         .franchise-table::before {
             content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity 0.4s ease;
-            background: inherit; filter: blur(20px); z-index: -1;
+            background: inherit; filter: blur(25px); z-index: -1; pointer-events: none;
         }
-        .franchise-table.active-bidder {
-            transform: translateY(-8px) scale(1.05);
-            box-shadow: 0 20px 40px -10px var(--team-glow);
-            border-color: var(--team-border) !important;
-            z-index: 20;
-        }
-        .franchise-table.active-bidder::before { opacity: 0.5; }
+        .franchise-table.active-bidder::before { opacity: 0.6; }
 
         .glitch-text {
             position: relative;
@@ -167,16 +183,16 @@
         .sold-stamp {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(2) rotate(-10deg);
             opacity: 0; pointer-events: none; z-index: 50;
-            font-size: 2.5rem; /* Browser friendly & crisp */
+            font-size: clamp(1.8rem, 5vw, 3rem); /* Dynamically scales */
             font-weight: 900; color: #10b981; text-transform: uppercase;
-            border: 4px solid #10b981; padding: 0.5rem 1.5rem; border-radius: 1rem;
+            border: 4px solid #10b981; padding: 0.75rem 1.5rem; border-radius: 1.5rem;
             text-shadow: 0 0 10px rgba(16, 185, 129, 0.5); 
             box-shadow: 0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.3);
-            white-space: nowrap; max-width: 90vw; overflow: hidden; text-overflow: ellipsis;
+            text-align: center; line-height: 1.1; max-width: 90vw; width: max-content;
             will-change: transform, opacity; /* Optimized for smooth animation */
         }
         @media (min-width: 640px) {
-            .sold-stamp { font-size: 4rem; border-width: 6px; padding: 0.5rem 2rem; }
+            .sold-stamp { font-size: clamp(2.5rem, 6vw, 4.5rem); border-width: 6px; padding: 1rem 2.5rem; }
         }
         .sold-stamp.stamp-active {
             animation: stampIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
@@ -284,7 +300,7 @@
                     <div class="hero-floating hero-glow-box w-full max-w-[280px] sm:max-w-[320px] md:max-w-[400px] aspect-square bg-[#f8fafc] rounded-[2.5rem] border-[4px] border-slate-900 overflow-hidden shadow-2xl p-2 relative group/map">
                         <!-- Inner soft border effect -->
                         <div class="absolute inset-0 rounded-[2.25rem] border-2 border-white/50 mix-blend-overlay pointer-events-none"></div>
-                        <img src="india.jpg" alt="DPL India Map" class="w-full h-full object-cover rounded-[2rem] transition-transform duration-700 group-hover/map:scale-105 filter contrast-[1.05] drop-shadow-md">
+                        <img src="india.jpg" alt="DPL India Map" onerror="this.onerror=null; this.src='https://placehold.co/400x400/0f172a/D4AF37?text=Map+Placeholder';" class="w-full h-full object-cover rounded-[2rem] transition-transform duration-700 group-hover/map:scale-105 filter contrast-[1.05] drop-shadow-md">
                     </div>
                 </div>
             </div>
@@ -396,7 +412,9 @@
                 </div>
                 <!-- Admin Override Controls (Hidden by Default) -->
                 <div id="auction-admin-controls" class="hide flex gap-2 flex-wrap justify-end">
-                    <button onclick="adminToggleAuctionStage()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">Next Player</button>
+                    <button onclick="adminPrevPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">⏮ Prev</button>
+                    <button onclick="adminNextPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">Next ⏭</button>
+                    <button onclick="adminToggleAuctionStage()" class="btn-primary py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase">Start Bidding</button>
                     <button onclick="adminGiveWarning()" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning (5s)</button>
                     <button onclick="adminLockAndSell()" id="btn-admin-sell" class="btn-primary py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase text-xs shadow-lg shadow-red-600/30">Lock & Sell</button>
                 </div>
@@ -430,10 +448,10 @@
                     <p id="auction-player-role" class="text-xl sm:text-2xl font-bold text-blue-400 tracking-widest uppercase mb-8 sm:mb-12">---</p>
 
                     <!-- Central Bid Display -->
-                    <div class="w-full max-w-lg mx-auto bg-slate-900/80 backdrop-blur-md rounded-3xl border-2 border-slate-700 p-6 sm:p-8 mb-8 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-800/50 to-transparent pointer-events-none"></div>
+                    <div class="w-full max-w-lg mx-auto bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-700 p-6 sm:p-8 mb-8 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-800/30 to-transparent pointer-events-none"></div>
                         <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Current Bid</p>
-                        <div id="auction-current-bid" class="text-6xl sm:text-8xl font-black text-white tracking-tighter font-mono transition-colors duration-300">$20</div>
+                        <div id="auction-current-bid" class="text-6xl sm:text-8xl font-black text-white tracking-tighter font-mono transition-colors duration-300 drop-shadow-lg">$20</div>
                         <div class="mt-4 pt-4 border-t border-slate-700/50">
                             <p class="text-xs text-slate-500 uppercase tracking-widest mb-1">Highest Bidder</p>
                             <p id="auction-highest-bidder" class="text-xl font-bold text-slate-300 italic">None (Base Price)</p>
@@ -780,7 +798,7 @@
                     </div>
                     <div class="text-center md:text-left">
                         <span class="text-[10px] font-bold text-[#D4AF37]/60 uppercase tracking-[0.25em]">Authorized Administrator</span>
-                        <h2 class="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 uppercase tracking-tight transform -skew-x-3 mt-0.5">Avinash Huse</h2>
+                        <h2 class="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 uppercase tracking-tight transform -skew-x-3 mt-0.5">Amol Huse</h2>
                         <p class="text-base font-bold text-white/80 mt-1">ARc next Pvt Ltd</p>
                     </div>
                     <div class="md:ml-auto flex flex-col gap-3 text-right">
@@ -834,7 +852,10 @@
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Currently On Block</span>
                             <p id="ap-player-name" class="text-2xl font-black text-white italic transform -skew-x-6">---</p>
                             <p id="ap-player-role" class="text-blue-400 text-sm font-medium">---</p>
-                            <button onclick="adminNextPlayer()" class="mt-2 w-full py-2 rounded-xl border border-slate-600 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">⏭ Next Player</button>
+                            <div class="flex gap-2 w-full mt-2">
+                                <button onclick="adminPrevPlayer()" class="w-1/2 py-2 rounded-xl border border-slate-600 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">⏮ Prev</button>
+                                <button onclick="adminNextPlayer()" class="w-1/2 py-2 rounded-xl border border-slate-600 text-slate-300 text-xs font-bold hover:bg-slate-700 transition-all">Next ⏭</button>
+                            </div>
                         </div>
                         <div class="md:col-span-2">
                             <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Force Assign to Franchise (At Base Price)</p>
@@ -948,7 +969,7 @@
 
     <!-- Universal Modal -->
     <div id="custom-modal" class="fixed inset-0 flex items-center justify-center hide px-4 transition-opacity duration-300 z-[1000]">
-        <div class="absolute inset-0 bg-slate-900/40 cursor-pointer" onclick="closeModal()"></div>
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm cursor-pointer" onclick="closeModal()"></div>
         <div class="bg-white rounded-2xl shadow-2xl p-0 max-w-sm w-full z-10 relative overflow-hidden transform scale-95 opacity-0 transition-all duration-300 border border-slate-100" id="modal-content-box">
             <div class="flex justify-between items-center p-6 border-b border-slate-100">
                 <h3 id="modal-title" class="text-lg font-bold text-slate-900">Notice</h3>
@@ -1095,15 +1116,54 @@
             // 2. Sync Auction State
             onValue(auctionRef, (snapshot) => {
                 if (snapshot.exists()) {
-                    state.auction = { ...state.auction, ...snapshot.val() };
-                    // RTDB specific handling for arrays
-                    if(!state.auction.passedTeams) state.auction.passedTeams = [];
-                    if(!state.auction.loggedInOwners) state.auction.loggedInOwners = [];
+                    const newData = snapshot.val();
+                    const wasActive = state.auction.isSessionActive;
+                    
+                    state.auction = { 
+                        ...state.auction, 
+                        ...newData 
+                    };
+
+                    // CRITICAL FIX: Ensure fields deleted by Firebase (like null) are overwritten!
+                    if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
+                    if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
+                    if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
+
+                    // KICK OWNERS & SHOW POPUP WHEN SESSION STOPS
+                    if (wasActive === true && state.auction.isSessionActive === false) {
+                        if (state.userRole.startsWith('owner_')) {
+                            state.userRole = 'viewer';
+                            sessionStorage.removeItem('dpl_userRole'); // Clear browser memory
+                            // Force UI update to remove bidding controls
+                            if (document.getElementById('view-auction').classList.contains('active-view')) {
+                                 renderAuctionUI();
+                            }
+                        }
+                        if (state.userRole !== 'admin') {
+                            showModal("Auction Stopped", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛑</span><h3 class='font-bold text-red-600 text-xl'>Session Closed</h3><p class='text-slate-500 mt-2'>The Master Admin has stopped the auction session. You have been disconnected.</p></div>");
+                        }
+                    }
+
+                    // SELF-HEALING: If an owner refreshed the page, their browser remembers they are logged in,
+                    // but Firebase might have lost their "presence" in the array. This re-adds them automatically!
+                    if (state.auction.isSessionActive && state.userRole.startsWith('owner_')) {
+                        const myTeam = state.userRole.replace('owner_', '');
+                        if (state.auction.loggedInOwners && !state.auction.loggedInOwners.includes(myTeam)) {
+                            state.auction.loggedInOwners.push(myTeam);
+                            saveAuctionState();
+                        }
+                    }
+
                 } else {
                     saveAuctionState(); 
                 }
-                if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-                if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+                
+                try {
+                    if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+                    if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+                } catch(e) {
+                    console.error("UI Render Error:", e);
+                }
             }, (error) => console.error("Auction sync error:", error));
 
             // 3. Sync Live Score
@@ -1117,18 +1177,18 @@
 
         function saveAuctionState() {
             if (!isFirebaseReady) return;
-            set(auctionRef, state.auction).catch(e => console.error(e));
+            set(auctionRef, state.auction).catch(e => console.error("Failed to save auction:", e));
         }
 
         function saveLiveScoreState() {
             if (!isFirebaseReady) return;
-            set(liveScoreRef, state.liveScore).catch(e => console.error(e));
+            set(liveScoreRef, state.liveScore).catch(e => console.error("Failed to save score:", e));
         }
 
         // --- Utils & Core Data ---
         function formatName(str) {
             if (!str) return "";
-            const parts = str.trim().split(/\s+/);
+            const parts = String(str).trim().split(/\s+/);
             const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
             if (parts.length === 1) return capitalize(parts[0]);
             if (parts.length === 2) return capitalize(parts[0]) + " " + capitalize(parts[1]);
@@ -1152,7 +1212,7 @@
             return (player.mobile || `${formatName(player.name)}-${player.role || 'player'}`).toString();
         }
         function getPlayersByTeam(teamName) {
-            return state.allPlayers.filter(player => ((player.team || '').toString().trim() === teamName));
+            return state.allPlayers.filter(player => ((player.team || '').toString().trim() === String(teamName).trim()));
         }
 
         function findPlayerRecord(teamName, mobile, playerName) {
@@ -1245,6 +1305,7 @@
             state.auction.isSessionActive = !state.auction.isSessionActive;
             if (!state.auction.isSessionActive) {
                 state.auction.loggedInOwners = []; // Clear logins when session stops
+                state.auction.status = 'waiting'; // Force UI to waiting state globally
             }
             saveAuctionState();
             renderAdminPanel();
@@ -1252,7 +1313,7 @@
             if (state.auction.isSessionActive) {
                 showModal("Session Activated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🚀</span><h3 class='font-bold text-emerald-600 text-xl'>Auction Live</h3><p class='text-slate-500 mt-2'>Franchise Owners can now log in using their assigned PINs (0718 - 0722).</p></div>");
             } else {
-                showModal("Session Deactivated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🔒</span><h3 class='font-bold text-red-600 text-xl'>Auction Locked</h3><p class='text-slate-500 mt-2'>Owner logins are now blocked.</p></div>");
+                showModal("Session Deactivated", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🔒</span><h3 class='font-bold text-red-600 text-xl'>Auction Locked</h3><p class='text-slate-500 mt-2'>Owner logins are now blocked and all owners have been kicked out.</p></div>");
             }
         }
 
@@ -1294,8 +1355,8 @@
                 return showModal("Waiting for Owners", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⏳</span><h3 class='font-bold text-slate-800 text-xl'>War Room Incomplete</h3><p class='text-slate-500 mt-2'>Only ${currentLogins}/${requiredOwners} franchise owners have securely connected to the session. You cannot bring a player to the block until all teams are present.</p></div>`);
             }
 
-            if (state.auction.status === 'sold') {
-                state.auction.playerIdx = (state.auction.playerIdx + 1) % state.unassigned.length;
+            if (state.auction.playerIdx >= state.unassigned.length) {
+                state.auction.playerIdx = Math.max(0, state.unassigned.length - 1);
             }
 
             state.auction.status = 'active';
@@ -1383,6 +1444,11 @@
                 }
             } else {
                 console.log("Player Unsold/Passed");
+                if (state.auction.playerIdx < state.unassigned.length - 1) {
+                    state.auction.playerIdx++;
+                } else {
+                    state.auction.playerIdx = 0; // Wrap to start if they pass the last player
+                }
             }
 
             saveAuctionState();
@@ -1397,7 +1463,11 @@
                     
                     setTimeout(() => {
                         if (stage) stage.classList.remove('stage-transition-out');
-                        state.auction.playerIdx = 0; // Reset index since list size changes dynamically
+                        
+                        if (state.auction.playerIdx >= state.unassigned.length) {
+                            state.auction.playerIdx = Math.max(0, state.unassigned.length - 1);
+                        }
+
                         adminToggleAuctionStage();
                     }, 500); 
                 }
@@ -1436,7 +1506,7 @@
                             </p>
                         </div>
                         <div class="team-photo-wrap relative z-10">
-                            ${teamImage ? `<div class="team-photo-frame"><img src="${teamImage}" alt="${team} owner" class="team-photo ${teamImageClass} select-none pointer-events-none"></div>` : ''}
+                            ${teamImage ? `<div class="team-photo-frame"><img src="${teamImage}" alt="${team} owner" onerror="this.style.display='none';" class="team-photo ${teamImageClass} select-none pointer-events-none"></div>` : ''}
                         </div>
                         <div class="hidden sm:flex absolute right-6 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-slate-50/90 border-2 border-slate-100 items-center justify-center text-slate-400 group-hover:translate-x-2 transition-transform shadow-sm shrink-0 z-10">→</div>
                     </div>
@@ -1518,13 +1588,13 @@
                 if (state.auction.status === 'sold') {
                     stamp.classList.add('stamp-active');
                     if (state.auction.highestBidder) {
-                        stamp.innerText = `SOLD TO ${teamConfig[state.auction.highestBidder].name.toUpperCase()}!`;
+                        stamp.innerHTML = `<span class="block text-[0.45em] opacity-90 mb-[-0.2em] tracking-[0.2em]">SOLD TO</span><span class="text-white drop-shadow-md">${teamConfig[state.auction.highestBidder].name.toUpperCase()}</span>`;
                         stamp.style.color = "#10b981"; 
                         stamp.style.borderColor = "#10b981";
                         stamp.style.textShadow = "0 0 10px rgba(16, 185, 129, 0.5)"; 
                         stamp.style.boxShadow = "0 0 20px rgba(16, 185, 129, 0.3), inset 0 0 10px rgba(16, 185, 129, 0.3)";
                     } else {
-                        stamp.innerText = "UNSOLD";
+                        stamp.innerHTML = "UNSOLD";
                         stamp.style.color = "#ef4444"; 
                         stamp.style.borderColor = "#ef4444";
                         stamp.style.textShadow = "0 0 10px rgba(239, 68, 68, 0.5)";
@@ -1536,77 +1606,106 @@
             }
 
             const grid = document.getElementById('franchise-tables-grid');
+            if(!grid) return;
             grid.innerHTML = '';
             
             const isOwnerView = state.userRole.startsWith('owner_');
             grid.className = isOwnerView 
-                ? "max-w-md mx-auto mt-8" 
-                : "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4 mt-8";
+                ? "max-w-sm mx-auto mt-8" 
+                : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 mt-8";
             
             Object.keys(teamConfig).forEach(team => {
-                const conf = teamConfig[team];
-                const isHighest = state.auction.highestBidder === team;
-                const isMyTeam = state.userRole === `owner_${team}`;
-                const isActiveStage = state.auction.status === 'active' || state.auction.status === 'warning';
-                const hasPassed = state.auction.passedTeams && state.auction.passedTeams.includes(team);
-                const isConnected = state.auction.loggedInOwners && state.auction.loggedInOwners.includes(team);
-                
-                // If it is an owner view and this table is NOT their team, hide it completely
-                if (isOwnerView && !isMyTeam) return;
+                try {
+                    const conf = teamConfig[team];
+                    const isHighest = state.auction.highestBidder === team;
+                    const isMyTeam = state.userRole === `owner_${team}`;
+                    const isActiveStage = state.auction.status === 'active' || state.auction.status === 'warning';
+                    const hasPassed = state.auction.passedTeams && state.auction.passedTeams.includes(team);
+                    const isConnected = state.auction.loggedInOwners && state.auction.loggedInOwners.includes(team);
+                    
+                    // If it is an owner view and this table is NOT their team, hide it completely
+                    if (isOwnerView && !isMyTeam) return;
 
-                const currentCount = state.teams[team] ? state.teams[team].length : 0;
-                const spent = state.teamSpent[team] || 0;
-                const remainingPurse = 1000 - spent;
+                    const currentCount = state.teams[team] ? state.teams[team].length : 0;
+                    const spent = state.teamSpent[team] || 0;
+                    const remainingPurse = 1000 - spent;
 
-                let buttonHTML = '';
-                if (isMyTeam) {
-                    if (isActiveStage) {
-                        if (hasPassed) {
-                            buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-red-900/40 text-red-400 font-black uppercase text-xs cursor-not-allowed border border-red-900/50">PASSED 🚫</button>`;
-                        } else if (isHighest) {
-                            buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-slate-800 text-slate-400 font-black uppercase text-xs cursor-not-allowed border border-slate-700 shadow-inner">Highest Bidder</button>`;
+                    let buttonHTML = '';
+                    if (isMyTeam) {
+                        if (isActiveStage) {
+                            if (hasPassed) {
+                                buttonHTML = `<button disabled class="w-full py-3 rounded-xl bg-red-900/40 text-red-400 font-black uppercase text-xs cursor-not-allowed border border-red-900/50">PASSED 🚫</button>`;
+                            } else if (isHighest) {
+                                buttonHTML = `<button disabled class="w-full py-3 rounded-xl bg-slate-800/50 text-slate-400 font-black uppercase text-xs cursor-not-allowed border border-slate-700/50 shadow-inner">Highest Bidder</button>`;
+                            } else {
+                                buttonHTML = `
+                                <div class="flex flex-col gap-2 w-full">
+                                    <div class="grid grid-cols-2 gap-2 w-full">
+                                        <button onclick="placeOwnerBid('${team}', 10)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $10</button>
+                                        <button onclick="placeOwnerBid('${team}', 20)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $20</button>
+                                        <button onclick="placeOwnerBid('${team}', 50)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $50</button>
+                                        <button onclick="placeOwnerBid('${team}', 100)" class="py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+ $100</button>
+                                    </div>
+                                    <button onclick="ownerPassBid('${team}')" class="w-full py-2.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-black uppercase tracking-widest text-[10px] transition-all">Fold / Pass</button>
+                                </div>`;
+                            }
                         } else {
-                            buttonHTML = `
-                            <div class="flex flex-col gap-2 mt-4 w-full">
-                                <div class="grid grid-cols-2 gap-2 w-full">
-                                    <button onclick="placeOwnerBid('${team}', 10)" class="py-2.5 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-xs hover:scale-105 transition-transform shadow-md shadow-black/20">+$10</button>
-                                    <button onclick="placeOwnerBid('${team}', 20)" class="py-2.5 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-xs hover:scale-105 transition-transform shadow-md shadow-black/20">+$20</button>
-                                    <button onclick="placeOwnerBid('${team}', 50)" class="py-2.5 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-xs hover:scale-105 transition-transform shadow-md shadow-black/20">+$50</button>
-                                    <button onclick="placeOwnerBid('${team}', 100)" class="py-2.5 rounded-lg bg-gradient-to-r ${conf.grad} text-white font-black italic text-xs hover:scale-105 transition-transform shadow-md shadow-black/20">+$100</button>
-                                </div>
-                                <button onclick="ownerPassBid('${team}')" class="w-full py-2.5 rounded-lg bg-slate-800 text-slate-400 font-bold uppercase text-xs hover:bg-red-900 hover:text-red-300 transition-colors border border-slate-700">PASS</button>
-                            </div>`;
+                            buttonHTML = `<button disabled class="w-full py-3 rounded-xl bg-slate-800/50 text-slate-500 font-black uppercase text-xs cursor-not-allowed border border-slate-700/30">Awaiting Player</button>`;
                         }
-                    } else {
-                        buttonHTML = `<button disabled class="mt-4 w-full py-3 rounded-xl bg-slate-800/50 text-slate-500 font-black uppercase text-xs cursor-not-allowed">Awaiting Player</button>`;
-                    }
-                } else if (state.userRole === 'admin') {
-                     if (isActiveStage) {
-                         if (hasPassed) {
-                             buttonHTML = `<button onclick="adminReviveTeam('${team}')" class="mt-4 w-full py-1.5 rounded bg-amber-900/40 border border-amber-700/50 text-amber-400 font-bold uppercase text-[10px] hover:bg-amber-600 hover:text-white transition-colors">Revive Team 🔄</button>`;
+                    } else if (state.userRole === 'admin') {
+                         if (isActiveStage) {
+                             if (hasPassed) {
+                                 buttonHTML = `<button onclick="adminReviveTeam('${team}')" class="w-full py-2 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 font-black uppercase text-[10px] hover:bg-amber-500/20 hover:scale-105 transition-all">Revive Team 🔄</button>`;
+                             } else {
+                                 buttonHTML = `<button onclick="placeOwnerBid('${team}', 10)" class="w-full py-2 rounded-xl bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] font-black uppercase text-[10px] hover:bg-[#00e5ff]/20 hover:scale-105 transition-all">Force Bid (+$10)</button>`;
+                             }
                          } else {
-                             buttonHTML = `<button onclick="placeOwnerBid('${team}', 10)" class="mt-4 w-full py-1.5 rounded bg-slate-800 text-slate-400 font-bold uppercase text-[10px] hover:text-white">Force Bid (+$10)</button>`;
+                             buttonHTML = `<div class="h-8"></div>`; // spacer
                          }
-                     }
-                } else if (hasPassed && isActiveStage) {
-                    buttonHTML = `<div class="mt-4 text-xs font-bold text-red-500 uppercase tracking-widest">OUT</div>`;
-                }
+                    } else if (hasPassed && isActiveStage) {
+                        buttonHTML = `<div class="w-full py-2 text-xs font-black text-red-500/70 uppercase tracking-widest">OUT</div>`;
+                    } else {
+                        buttonHTML = `<div class="h-8"></div>`; // spacer
+                    }
 
-                grid.innerHTML += `
-                    <div class="franchise-table p-4 sm:p-5 rounded-2xl border bg-slate-900 flex flex-col items-center justify-center text-center ${isHighest ? 'active-bidder' : (hasPassed ? 'opacity-40 border-red-900/30' : 'border-slate-800 opacity-70')}" style="--team-glow: ${conf.glow}; --team-border: ${conf.border};">
-                        ${isConnected ? '<span class="absolute top-2 right-3 w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" title="Connected"></span>' : '<span class="absolute top-2 right-3 w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] animate-pulse" title="Disconnected"></span>'}
-                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full mb-2 bg-gradient-to-br ${conf.grad} flex items-center justify-center text-white font-black italic text-lg shadow-inner shadow-white/20">
-                            ${conf.name.charAt(0)}
+                    grid.innerHTML += `
+                        <div class="franchise-table p-4 sm:p-6 rounded-[2rem] border bg-slate-900/60 backdrop-blur-xl flex flex-col items-center justify-center text-center transition-all duration-500 ${isHighest ? 'active-bidder transform -translate-y-2' : (hasPassed ? 'opacity-40 grayscale border-red-900/30' : 'border-slate-700/50 hover:border-slate-500/50')}" style="--team-glow: ${conf.glow}; --team-border: ${conf.border}; box-shadow: ${isHighest ? `0 20px 40px -10px ${conf.glow}, inset 0 0 20px rgba(255,255,255,0.05)` : '0 4px 6px -1px rgba(0,0,0,0.1)'}; border-color: ${isHighest ? conf.border : ''}">
+                            
+                            ${isConnected ? '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span><span class="text-[8px] font-black text-emerald-400 uppercase tracking-widest">Live</span></div>' : '<div class="absolute top-4 right-4 flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 border border-red-500/20"><span class="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]"></span><span class="text-[8px] font-black text-red-400 uppercase tracking-widest">Away</span></div>'}
+                            
+                            <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl mb-3 bg-gradient-to-br ${conf.grad} flex items-center justify-center text-white font-black italic text-2xl shadow-lg transform -skew-x-6 ring-4 ring-slate-900">
+                                <span class="transform skew-x-6">${conf.name.charAt(0)}</span>
+                            </div>
+                            
+                            <h4 class="font-black text-white text-sm sm:text-base uppercase tracking-widest drop-shadow-md">${conf.name}</h4>
+                            
+                            <div class="flex gap-2 mt-3 mb-2 w-full justify-center">
+                                <div class="flex flex-col items-center bg-slate-950/50 rounded-xl px-3 py-1.5 border border-slate-800/50 w-1/2">
+                                    <span class="text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Purse</span>
+                                    <span class="text-xs font-black text-emerald-400">$${remainingPurse}</span>
+                                </div>
+                                <div class="flex flex-col items-center bg-slate-950/50 rounded-xl px-3 py-1.5 border border-slate-800/50 w-1/2">
+                                    <span class="text-[8px] text-slate-400 uppercase tracking-widest mb-0.5">Squad</span>
+                                    <span class="text-xs font-black text-blue-400">${currentCount}/15</span>
+                                </div>
+                            </div>
+                            
+                            ${isHighest ? `
+                            <div class="mt-2 mb-1 w-full">
+                                <div class="inline-flex items-center justify-center gap-1.5 w-full py-1.5 rounded-lg bg-[#00e5ff]/10 border border-[#00e5ff]/30 text-[#00e5ff] shadow-[0_0_15px_rgba(0,229,255,0.2)]">
+                                    <span class="w-2 h-2 rounded-full bg-[#00e5ff] animate-pulse"></span>
+                                    <span class="text-[10px] font-black uppercase tracking-[0.2em]">Current Leader</span>
+                                </div>
+                            </div>` : '<div class="h-8 mt-2 mb-1"></div>'}
+                            
+                            <div class="w-full mt-2 pt-3 border-t border-slate-800/50">
+                                ${buttonHTML}
+                            </div>
                         </div>
-                        <h4 class="font-black text-white text-xs sm:text-sm uppercase tracking-wider">${conf.name}</h4>
-                        <div class="flex gap-2 mt-1.5 mb-1 flex-wrap justify-center">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded text-emerald-400 bg-emerald-400/10 border border-emerald-400/20">💰 $${remainingPurse}</span>
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded text-blue-400 bg-blue-400/10 border border-blue-400/20">👥 ${currentCount}/15</span>
-                        </div>
-                        ${isHighest ? `<div class="mt-1 text-[10px] font-bold px-2 py-0.5 rounded text-white bg-slate-800 border" style="border-color:${conf.border}">LEADING</div>` : ''}
-                        ${buttonHTML}
-                    </div>
-                `;
+                    `;
+                } catch(e) {
+                    console.error("Error rendering team:", team, e);
+                }
             });
 
             const adminControls = document.getElementById('auction-admin-controls');
@@ -1749,11 +1848,28 @@
 
         function adminNextPlayer() {
             if (state.unassigned.length === 0) return;
-            state.auction.playerIdx++;
-            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
-            saveAuctionState();
-            renderAdminPanel();
-            renderAuctionUI();
+            if (state.auction.playerIdx < state.unassigned.length - 1) {
+                state.auction.playerIdx++;
+                state.auction.status = 'waiting';
+                saveAuctionState();
+                renderAdminPanel();
+                renderAuctionUI();
+            } else {
+                showModal("End of List", "You have reached the last player in the pool.");
+            }
+        }
+
+        function adminPrevPlayer() {
+            if (state.unassigned.length === 0) return;
+            if (state.auction.playerIdx > 0) {
+                state.auction.playerIdx--;
+                state.auction.status = 'waiting';
+                saveAuctionState();
+                renderAdminPanel();
+                renderAuctionUI();
+            } else {
+                showModal("Start of List", "You are at the very first player in the pool.");
+            }
         }
 
         async function adminAssignPlayer(index, teamName) {
@@ -2048,6 +2164,7 @@
         window.handleAdminLogout = handleAdminLogout;
         window.switchAdminTab = switchAdminTab;
         window.adminNextPlayer = adminNextPlayer;
+        window.adminPrevPlayer = adminPrevPlayer;
         window.adminAssignPlayer = adminAssignPlayer;
         window.toggleUnassignedSelection = toggleUnassignedSelection;
         window.toggleSelectAllUnassigned = toggleSelectAllUnassigned;
