@@ -949,7 +949,7 @@
     <script type="module">
         import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getFirestore, doc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        import { getFirestore, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, collection } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
 
         // --- 1. Master State ---
         const state = {
@@ -992,15 +992,18 @@
         };
 
         // --- Firebase Setup ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        if (Object.keys(firebaseConfig).length === 0) {
-            // Fake config so local testing doesn't throw errors
-            firebaseConfig.apiKey = "fake"; firebaseConfig.projectId = "fake";
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_npEi4PwFVmcQpr11wRFJnLOXiW4NHHw",
+            authDomain: "live-auction-a3043.firebaseapp.com",
+            projectId: "live-auction-a3043",
+            storageBucket: "live-auction-a3043.firebasestorage.app",
+            messagingSenderId: "940960327246",
+            appId: "1:940960327246:web:89a457d38594eb8885451f"
+        };
 
         let app, auth, db, isFirebaseReady = false;
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'dpl-central-app';
-        let auctionDocRef, teamsDocRef, liveScoreDocRef;
+        let auctionDocRef, liveScoreDocRef, playersColRef;
 
         try {
             app = initializeApp(firebaseConfig);
@@ -1008,51 +1011,70 @@
             db = getFirestore(app);
             
             auctionDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_auction_sync');
-            teamsDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_teams_sync');
             liveScoreDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'app_state', 'dpl_livescore_sync');
+            playersColRef = collection(db, 'artifacts', appId, 'public', 'data', 'players');
         } catch (e) { console.error("Firebase init failed", e); }
 
         async function initFirebase() {
             if (!auth) return;
             try {
+                let tokenSuccess = false;
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
+                    try {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                        tokenSuccess = true;
+                    } catch (e) {
+                        console.warn("Custom token rejected. Falling back to anonymous auth.");
+                    }
                 }
+                
+                if (!tokenSuccess) {
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (err) {
+                        console.warn("Anonymous auth not enabled:", err.message);
+                        if (err.code === 'auth/configuration-not-found') {
+                            setTimeout(() => {
+                                showModal("Firebase Setup Required", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚠️</span><h3 class='font-bold text-red-600 text-xl'>Authentication Disabled</h3><p class='text-slate-500 mt-2'>Please go to your Firebase Console -> Authentication -> Sign-in Method, and enable <b>Anonymous</b> sign-in to allow the app to sync data.</p></div>");
+                            }, 1000);
+                        }
+                    }
+                }
+                
                 onAuthStateChanged(auth, (user) => {
-                    if (user && !isFirebaseReady) {
+                    // Initialize regardless of user state to allow test-mode unauthenticated access
+                    if (!isFirebaseReady) {
                         isFirebaseReady = true;
-                        setupRealtimeListeners();
+                        if(user) {
+                            setupRealtimeListeners();
+                        } else {
+                            console.warn("No valid user session. Realtime sync disabled.");
+                        }
                     }
                 });
-            } catch(e) { console.error("Auth error:", e); }
+            } catch(e) { console.warn("Auth error:", e.message); }
         }
 
         function setupRealtimeListeners() {
-            // 1. Sync Auction State
+            // 1. Sync Players Collection (Replaces Google Sheets)
+            onSnapshot(playersColRef, (snapshot) => {
+                const playersList = [];
+                snapshot.forEach(doc => {
+                    playersList.push({ id: doc.id, ...doc.data() });
+                });
+                populateStateFromPlayers(playersList);
+            }, (error) => console.error("Players sync error:", error));
+
+            // 2. Sync Auction State
             onSnapshot(auctionDocRef, (docSnap) => {
                 if (docSnap.exists()) {
                     state.auction = { ...state.auction, ...docSnap.data() };
                 } else {
-                    saveAuctionState(); // Create initial document if it doesn't exist
+                    saveAuctionState(); 
                 }
                 if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
                 if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
             }, (error) => console.error("Auction sync error:", error));
-
-            // 2. Sync Teams & Spent State
-            onSnapshot(teamsDocRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = docSnap.data();
-                    if (state.allPlayers.length === 0) { // Only override if we haven't loaded from sheets
-                        state.teams = data.teams || state.teams;
-                        state.teamSpent = data.teamSpent || state.teamSpent;
-                    }
-                    renderTeams();
-                    if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-                }
-            }, (error) => console.error("Teams sync error:", error));
 
             // 3. Sync Live Score
             onSnapshot(liveScoreDocRef, (docSnap) => {
@@ -1066,11 +1088,6 @@
         function saveAuctionState() {
             if (!isFirebaseReady) return;
             setDoc(auctionDocRef, state.auction).catch(e => console.error(e));
-        }
-
-        function saveTeamsState() {
-            if (!isFirebaseReady) return;
-            setDoc(teamsDocRef, { teams: state.teams, teamSpent: state.teamSpent }).catch(e => console.error(e));
         }
 
         function saveLiveScoreState() {
@@ -1164,40 +1181,22 @@
         }
 
         async function assignPlayerToTeam(player, teamName, price = null) {
-            const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'assignPlayer',
-                    team: teamName,
-                    mobile: player.mobile || '',
-                    name: player.name || '',
-                    role: player.role || '',
-                    price: price || player.price || ''
-                })
-            });
-            return response.json();
+            if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
+            const playerRef = doc(playersColRef, player.mobile);
+            const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
+            await updateDoc(playerRef, { team: teamName, price: priceVal });
+            return { status: 'success' };
         }
 
         async function removePlayerFromTeam(player, mode) {
-            const currentTeam = (player.team || '').toString().trim();
-            const targetTeam = mode === 'delete' ? '' : 'Unassigned';
-            const response = await fetch(GOOGLE_APP_SCRIPT_URL, {
-                method: 'POST',
-                body: JSON.stringify({
-                    action: 'removePlayer',
-                    mode: mode,
-                    removeMode: mode,
-                    mobile: player.mobile || '',
-                    name: player.name || '',
-                    role: player.role || '',
-                    team: currentTeam,
-                    currentTeam: currentTeam,
-                    targetTeam: targetTeam,
-                    status: targetTeam || 'Deleted',
-                    playerId: (player.mobile || player.name || '').toString()
-                })
-            });
-            return response.json();
+            if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
+            const playerRef = doc(playersColRef, player.mobile);
+            if (mode === 'delete') {
+                await deleteDoc(playerRef);
+            } else {
+                await updateDoc(playerRef, { team: 'Unassigned', price: 20 });
+            }
+            return { status: 'success' };
         }
 
         // --- AUDIO ENGINE ---
@@ -1351,7 +1350,7 @@
 
             state.auction.currentBid = nextBid;
             state.auction.highestBidder = teamName;
-            state.auction.status = 'active'; // Reset back to active if someone bids during warning!
+            state.auction.status = 'active'; 
 
             saveAuctionState();
             renderAuctionUI();
@@ -1365,13 +1364,10 @@
             const player = state.unassigned[state.auction.playerIdx];
 
             if (team && player) {
-                if(!state.teams[team]) state.teams[team] = [];
-                state.teams[team].push(player.name);
-                state.teamSpent[team] = (state.teamSpent[team] || 0) + state.auction.currentBid;
-
                 try {
+                    // Update document directly in Firestore. 
+                    // This will trigger onSnapshot instantly to update all screens.
                     await assignPlayerToTeam(player, team, state.auction.currentBid);
-                    syncDataFromGoogleSheets();
                 } catch (e) {
                     console.error("Backend assign error:", e);
                 }
@@ -1380,7 +1376,6 @@
             }
 
             saveAuctionState();
-            saveTeamsState();
             renderAuctionUI();
 
             setTimeout(() => {
@@ -1392,70 +1387,11 @@
                     
                     setTimeout(() => {
                         if (stage) stage.classList.remove('stage-transition-out');
-                        state.auction.playerIdx = 0; 
+                        state.auction.playerIdx = 0; // Reset index since list size changes dynamically
                         adminToggleAuctionStage();
                     }, 500); 
                 }
             }, 4500); 
-        }
-
-        // --- Admin Functions added back ---
-        function adminNextPlayer() {
-            if (state.unassigned.length === 0) return;
-            state.auction.playerIdx++;
-            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
-            saveAuctionState();
-            renderAdminPanel();
-            renderAuctionUI();
-        }
-
-        async function adminAssignPlayer(index, teamName) {
-            const player = state.unassigned[index];
-            if (!player) return;
-            try {
-                const result = await assignPlayerToTeam(player, teamName, '$20');
-                if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
-                
-                await syncDataFromGoogleSheets();
-                renderAdminPanel();
-                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
-            } catch (error) {
-                showModal('Error', `<p class='text-center'>${error.message}</p>`);
-            }
-        }
-
-        function toggleUnassignedSelection(key, checked) {
-            if (checked && !state.selectedUnassignedPlayers.includes(key)) state.selectedUnassignedPlayers.push(key);
-            else state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(k => k !== key);
-            updateUnassignedSelectionUi();
-        }
-
-        function toggleSelectAllUnassigned(checked) {
-            state.selectedUnassignedPlayers = checked ? state.unassigned.map(getPlayerSelectionKey) : [];
-            renderAdminPanel();
-        }
-
-        function updateUnassignedSelectionUi() {
-            const btn = document.getElementById('admin-delete-selected-btn');
-            const chk = document.getElementById('admin-select-all-unassigned-checkbox');
-            const cnt = state.selectedUnassignedPlayers.length;
-            if(btn) { btn.disabled = cnt === 0; btn.innerText = cnt > 0 ? `Delete Selected (${cnt})` : 'Delete Selected'; }
-            if(chk) { chk.checked = cnt > 0 && cnt === state.unassigned.length; chk.indeterminate = cnt > 0 && cnt < state.unassigned.length; }
-        }
-
-        function confirmBulkDeleteUnassigned() {
-            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
-            if (selected.length === 0) return;
-            showModal('Delete Players', `<div class="space-y-4 text-center"><p class="font-bold text-red-600">${selected.length} players will be permanently deleted.</p><button onclick="bulkDeleteSelectedUnassigned()" class="w-full py-3 rounded-xl bg-red-600 text-white font-bold">Confirm</button></div>`);
-        }
-
-        async function bulkDeleteSelectedUnassigned() {
-            closeModal();
-            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
-            for (const p of selected) await removePlayerFromTeam(p, 'delete');
-            state.selectedUnassignedPlayers = [];
-            await syncDataFromGoogleSheets();
-            renderAdminPanel();
         }
 
         // --- 4. Render Logic ---
@@ -1790,6 +1726,28 @@
             }
         }
 
+        function adminNextPlayer() {
+            if (state.unassigned.length === 0) return;
+            state.auction.playerIdx++;
+            if (state.auction.playerIdx >= state.unassigned.length) state.auction.playerIdx = 0;
+            saveAuctionState();
+            renderAdminPanel();
+            renderAuctionUI();
+        }
+
+        async function adminAssignPlayer(index, teamName) {
+            const player = state.unassigned[index];
+            if (!player) return;
+            try {
+                const result = await assignPlayerToTeam(player, teamName, '20');
+                if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
+                
+                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
+            } catch (error) {
+                showModal('Error', `<p class='text-center'>${error.message}</p>`);
+            }
+        }
+
         function confirmAdminRemovePlayer(teamName, mobile, playerName) {
             const player = findPlayerRecord(teamName, mobile, playerName);
             if (!player) return showModal('Error', "Player not found. Sync data.");
@@ -1811,11 +1769,41 @@
             if (!player) return;
             try {
                 await removePlayerFromTeam(player, mode);
-                await syncDataFromGoogleSheets();
-                renderAdminPanel();
             } catch (error) {
                 showModal('Error', "Removal failed.");
             }
+        }
+
+        function toggleUnassignedSelection(key, checked) {
+            if (checked && !state.selectedUnassignedPlayers.includes(key)) state.selectedUnassignedPlayers.push(key);
+            else state.selectedUnassignedPlayers = state.selectedUnassignedPlayers.filter(k => k !== key);
+            updateUnassignedSelectionUi();
+        }
+
+        function toggleSelectAllUnassigned(checked) {
+            state.selectedUnassignedPlayers = checked ? state.unassigned.map(getPlayerSelectionKey) : [];
+            renderAdminPanel();
+        }
+
+        function updateUnassignedSelectionUi() {
+            const btn = document.getElementById('admin-delete-selected-btn');
+            const chk = document.getElementById('admin-select-all-unassigned-checkbox');
+            const cnt = state.selectedUnassignedPlayers.length;
+            if(btn) { btn.disabled = cnt === 0; btn.innerText = cnt > 0 ? `Delete Selected (${cnt})` : 'Delete Selected'; }
+            if(chk) { chk.checked = cnt > 0 && cnt === state.unassigned.length; chk.indeterminate = cnt > 0 && cnt < state.unassigned.length; }
+        }
+
+        function confirmBulkDeleteUnassigned() {
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            if (selected.length === 0) return;
+            showModal('Delete Players', `<div class="space-y-4 text-center"><p class="font-bold text-red-600">${selected.length} players will be permanently deleted.</p><button onclick="bulkDeleteSelectedUnassigned()" class="w-full py-3 rounded-xl bg-red-600 text-white font-bold">Confirm</button></div>`);
+        }
+
+        async function bulkDeleteSelectedUnassigned() {
+            closeModal();
+            const selected = state.unassigned.filter(p => state.selectedUnassignedPlayers.includes(getPlayerSelectionKey(p)));
+            for (const p of selected) await removePlayerFromTeam(p, 'delete');
+            state.selectedUnassignedPlayers = [];
         }
 
         function downloadPlayerDataCSV() {
@@ -1865,22 +1853,51 @@
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; btn.disabled = true;
             try {
-                const res = await fetch(GOOGLE_APP_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ name: formatName(document.getElementById('reg-name').value), mobile: document.getElementById('reg-mobile').value, role: document.getElementById('reg-role').value, pin: document.getElementById('reg-pin').value }) });
-                const result = await res.json();
-                if (result.status === 'success') { switchInnerTab('hub', 'selection'); showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); e.target.reset(); }
-                else showModal("Error", result.message);
+                if (!isFirebaseReady) throw new Error("Database not ready.");
+                const name = formatName(document.getElementById('reg-name').value);
+                const mobile = document.getElementById('reg-mobile').value;
+                const role = document.getElementById('reg-role').value;
+                const pin = document.getElementById('reg-pin').value;
+
+                const playerRef = doc(playersColRef, mobile);
+                const docSnap = await getDoc(playerRef);
+                if (docSnap.exists()) {
+                    showModal("Error", "Mobile number is already registered.");
+                } else {
+                    await setDoc(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20 });
+                    switchInnerTab('hub', 'selection'); 
+                    showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); 
+                    e.target.reset();
+                }
+            } catch(err) {
+                showModal("Error", err.message);
             } finally { btn.innerText = "Submit Application"; btn.disabled = false; }
         }
+        
         async function handlePlayerLogin(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Checking..."; btn.disabled = true;
             try {
-                const res = await fetch(`${GOOGLE_APP_SCRIPT_URL}?action=login&mobile=${document.getElementById('login-mobile').value}&pin=${document.getElementById('login-pin').value}`);
-                const result = await res.json();
-                if (result.status === 'success') { state.loggedInPlayer = result.player; switchInnerTab('hub', 'dash'); syncLoggedInPlayerDashboard(); e.target.reset(); }
-                else showModal("Error", result.message);
+                if (!isFirebaseReady) throw new Error("Database not ready.");
+                const mobile = document.getElementById('login-mobile').value;
+                const pin = document.getElementById('login-pin').value;
+                
+                const playerRef = doc(playersColRef, mobile);
+                const docSnap = await getDoc(playerRef);
+                
+                if (docSnap.exists() && docSnap.data().pin === pin) {
+                    state.loggedInPlayer = docSnap.data(); 
+                    switchInnerTab('hub', 'dash'); 
+                    syncLoggedInPlayerDashboard(); 
+                    e.target.reset();
+                } else {
+                    showModal("Error", "Invalid mobile number or PIN.");
+                }
+            } catch(err) {
+                showModal("Error", err.message);
             } finally { btn.innerText = "Login"; btn.disabled = false; }
         }
+        
         function handlePlayerLogout() { state.loggedInPlayer = null; switchInnerTab('hub', 'selection'); }
 
         function syncLoggedInPlayerDashboard() {
@@ -2008,8 +2025,6 @@
 
         // Init
         initFirebase();
-        syncDataFromGoogleSheets();
-        setInterval(syncDataFromGoogleSheets, 30000);
     </script>
 </body>
 </html>
