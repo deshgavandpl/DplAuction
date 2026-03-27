@@ -421,7 +421,7 @@
                     <button onclick="adminPrevPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">⏮ Prev</button>
                     <button onclick="adminNextPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">Next ⏭</button>
                     <button onclick="adminToggleAuctionStage()" class="btn-primary py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase shadow-[0_0_15px_rgba(37,99,235,0.4)]">Bring to Block</button>
-                    <button onclick="adminGiveWarning()" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning (5s)</button>
+                    <button onclick="adminGiveWarning()" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning (7s)</button>
                     <button onclick="adminLockAndSell()" id="btn-admin-sell" class="btn-primary py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase text-xs shadow-lg shadow-red-600/30">Lock & Sell</button>
                 </div>
             </div>
@@ -468,7 +468,7 @@
                     <div id="auction-timer-wrapper" class="w-full max-w-2xl mx-auto hide">
                         <div class="flex justify-between text-xs font-bold text-red-400 mb-2 uppercase tracking-widest animate-pulse">
                             <span>Final Warning</span>
-                            <span id="auction-time-text" class="text-white font-mono text-sm">5.0s</span>
+                            <span id="auction-time-text" class="text-white font-mono text-sm">7.0s</span>
                         </div>
                         <div class="auction-timer-container border border-red-700/50 shadow-inner bg-red-900/20">
                             <div id="auction-timer-bar" class="auction-timer-bar w-full !bg-gradient-to-r !from-red-500 !to-orange-500"></div>
@@ -1137,6 +1137,14 @@
             }
         }
 
+        // --- Audio Preloading ---
+        const audioSold = new Audio('sold.mp3');
+        const audioUnsold = new Audio('unsold.mp3');
+        const audioTic = new Audio('tic1.mp3');
+        audioSold.preload = 'auto';
+        audioUnsold.preload = 'auto';
+        audioTic.preload = 'auto';
+
         function setupRealtimeListeners() {
             // 1. Sync Players Collection
             onValue(playersRef, (snapshot) => {
@@ -1306,36 +1314,6 @@
             return { status: 'success' };
         }
 
-        // --- AUDIO ENGINE ---
-        function playSoldSound() {
-            try {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (!AudioContext) return;
-                const ctx = new AudioContext();
-
-                const playNote = (freq, startTime, duration) => {
-                    const osc = ctx.createOscillator();
-                    const gain = ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0, startTime);
-                    gain.gain.linearRampToValueAtTime(0.3, startTime + 0.1); 
-                    gain.gain.exponentialRampToValueAtTime(0.01, startTime + duration); 
-                    osc.connect(gain); gain.connect(ctx.destination);
-                    osc.start(startTime); osc.stop(startTime + duration);
-                };
-
-                const now = ctx.currentTime;
-                playNote(523.25, now, 0.5);       
-                playNote(659.25, now + 0.1, 0.6); 
-                playNote(783.99, now + 0.2, 1.0); 
-                playNote(1046.50, now + 0.2, 1.2); 
-
-            } catch (e) {
-                console.log('Audio playback blocked by browser interaction policy or not supported');
-            }
-        }
-
         function adminToggleSession() {
             state.auction.isSessionActive = !state.auction.isSessionActive;
             if (!state.auction.isSessionActive) {
@@ -1368,7 +1346,7 @@
                     
                     if (text) text.innerText = `${seconds}s`;
                     if (bar) {
-                        const percentage = (remaining / 5000) * 100; // Warning is 5 seconds
+                        const percentage = (remaining / 7000) * 100; // Warning is 7 seconds
                         bar.style.width = `${percentage}%`;
                     }
                 } else {
@@ -1407,7 +1385,7 @@
         function adminGiveWarning() {
             if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
             state.auction.status = 'warning';
-            state.auction.endTime = Date.now() + 5000; // 5 Seconds Warning Timer
+            state.auction.endTime = Date.now() + 7000; // 7 Seconds Warning Timer
             saveAuctionState();
             renderAuctionUI();
         }
@@ -1561,8 +1539,16 @@
 
             if (state.auction.status === 'sold' && lastAuctionStatus !== 'sold') {
                 if (state.auction.highestBidder) {
-                    playSoldSound();
+                    audioSold.currentTime = 0;
+                    audioSold.play().catch(e => console.log('Audio blocked:', e));
+                } else {
+                    audioUnsold.currentTime = 0;
+                    audioUnsold.play().catch(e => console.log('Audio blocked:', e));
                 }
+            }
+            if (state.auction.status === 'warning' && lastAuctionStatus !== 'warning') {
+                audioTic.currentTime = 0;
+                audioTic.play().catch(e => console.log('Audio blocked:', e));
             }
             lastAuctionStatus = state.auction.status;
             
