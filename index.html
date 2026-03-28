@@ -18,19 +18,23 @@
     <!-- ANTI-FLICKER SCRIPT (Runs instantly to set correct view before CSS paints) -->
     <script>
         (function() {
-            const savedView = localStorage.getItem('dpl_current_view');
-            if (savedView && savedView !== 'home') {
-                document.documentElement.style.visibility = 'hidden';
-                window.addEventListener('DOMContentLoaded', () => {
-                    document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
-                    const target = document.getElementById('view-' + savedView);
-                    if(target) target.classList.add('active-view');
-                    document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => {
-                        if (el.dataset.target === savedView) el.classList.add('active');
-                        else el.classList.remove('active');
+            try {
+                const savedView = localStorage.getItem('dpl_current_view');
+                if (savedView && savedView !== 'home') {
+                    document.documentElement.style.visibility = 'hidden';
+                    window.addEventListener('DOMContentLoaded', () => {
+                        document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
+                        const target = document.getElementById('view-' + savedView);
+                        if(target) target.classList.add('active-view');
+                        document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => {
+                            if (el.dataset.target === savedView) el.classList.add('active');
+                            else el.classList.remove('active');
+                        });
+                        document.documentElement.style.visibility = '';
                     });
-                    document.documentElement.style.visibility = '';
-                });
+                }
+            } catch(e) {
+                // Ignore localStorage errors in strict iframe environments
             }
         })();
     </script>
@@ -414,7 +418,12 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
                 <div>
                     <h1 class="text-3xl sm:text-4xl font-black text-slate-900 italic transform -skew-x-6 uppercase tracking-tight flex items-center gap-3">🔴 Live Draft Desk</h1>
-                    <p class="text-slate-500 mt-1 font-medium tracking-wide" id="auction-user-status">View-Only Mode | Real-Time Sync Active</p>
+                    <div class="flex items-center flex-wrap gap-3 mt-1">
+                        <p class="text-slate-500 font-medium tracking-wide" id="auction-user-status">View-Only Mode | Real-Time Sync Active</p>
+                        <button id="btn-enable-audio" onclick="toggleAudio()" class="px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold border border-red-200 hover:bg-red-200 transition-colors flex items-center gap-1 shadow-sm">
+                            <span class="text-base">🔇</span> Enable Audio
+                        </button>
+                    </div>
                 </div>
                 <!-- Admin Override Controls (Hidden by Default) -->
                 <div id="auction-admin-controls" class="hide flex gap-2 flex-wrap justify-end">
@@ -1017,11 +1026,7 @@
     </div>
 
     <!-- Firebase Real-Time Integration Script -->
-    <script type="module">
-        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
-        import { getDatabase, ref, set, get, update, remove, onValue, child } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js';
-
+    <script>
         // --- 1. Master State ---
         const state = {
             teams: { 'AP11': [], 'Cotton11': [], 'Balkrushna11': [], 'Ajinkya Classes11': [], 'Ankushraj11': [] },
@@ -1073,29 +1078,39 @@
 
         let app, auth, db, isFirebaseReady = false;
         
-        // --- FIX: Sanitize the App ID for Firebase Realtime Database ---
         const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'dpl-central-app';
         const appId = rawAppId.replace(/[.#$[\]/]/g, '_'); 
         
         let auctionRef, liveScoreRef, playersRef;
-
-        try {
-            app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getDatabase(app);
-            
-            auctionRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_auction_sync`);
-            liveScoreRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_livescore_sync`);
-            playersRef = ref(db, `artifacts/${appId}/public/data/players`);
-        } catch (e) { console.error("Firebase init failed", e); }
+        let set, get, update, remove, ref, onValue; // Firebase real-time DB methods
 
         async function initFirebase() {
-            if (!auth) return;
             try {
+                // Dynamic imports ensure that standard script logic functions instantly
+                const fbApp = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+                const fbAuth = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+                const fbDb = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js');
+
+                app = fbApp.initializeApp(firebaseConfig);
+                auth = fbAuth.getAuth(app);
+                db = fbDb.getDatabase(app);
+
+                // Assign DB methods globally
+                set = fbDb.set;
+                get = fbDb.get;
+                update = fbDb.update;
+                remove = fbDb.remove;
+                ref = fbDb.ref;
+                onValue = fbDb.onValue;
+                
+                auctionRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_auction_sync`);
+                liveScoreRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_livescore_sync`);
+                playersRef = ref(db, `artifacts/${appId}/public/data/players`);
+
                 let tokenSuccess = false;
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     try {
-                        await signInWithCustomToken(auth, __initial_auth_token);
+                        await fbAuth.signInWithCustomToken(auth, __initial_auth_token);
                         tokenSuccess = true;
                     } catch (e) {
                         console.warn("Custom token rejected. Falling back to anonymous auth.");
@@ -1104,11 +1119,10 @@
                 
                 if (!tokenSuccess) {
                     try {
-                        await signInAnonymously(auth);
+                        await fbAuth.signInAnonymously(auth);
                     } catch (err) {
                         console.warn("Anonymous auth blocked by preview domain:", err.message);
                         
-                        // Force the real-time listeners to setup anyway!
                         if (!isFirebaseReady) {
                             isFirebaseReady = true;
                             setupRealtimeListeners();
@@ -1122,18 +1136,14 @@
                     }
                 }
                 
-                onAuthStateChanged(auth, (user) => {
+                fbAuth.onAuthStateChanged(auth, (user) => {
                     if (!isFirebaseReady) {
                         isFirebaseReady = true;
                         setupRealtimeListeners();
                     }
                 });
             } catch(e) { 
-                console.warn("Auth error:", e.message); 
-                if (!isFirebaseReady) {
-                    isFirebaseReady = true;
-                    setupRealtimeListeners();
-                }
+                console.warn("Firebase initialization skipped or failed:", e.message); 
             }
         }
 
@@ -1145,85 +1155,137 @@
         audioUnsold.preload = 'auto';
         audioTic.preload = 'auto';
 
+        let lastAuctionStatus = 'waiting';
+        let lastBidAmount = 0;
+        let lastBidder = null;
+        let isAudioEnabled = false;
+
+        function toggleAudio() {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById('btn-enable-audio');
+            if (isAudioEnabled) {
+                btn.innerHTML = '<span class="text-base">🔊</span> Audio On';
+                btn.className = 'px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-300 hover:bg-emerald-200 transition-colors flex items-center gap-1 shadow-sm';
+                
+                // Silent play to unlock audio context in strict browsers
+                if (window.speechSynthesis) {
+                    const unlockSpeech = new SpeechSynthesisUtterance("");
+                    unlockSpeech.volume = 0;
+                    window.speechSynthesis.speak(unlockSpeech);
+                }
+                [audioSold, audioUnsold, audioTic].forEach(a => {
+                    a.volume = 0;
+                    a.play().then(() => { a.pause(); a.currentTime = 0; a.volume = 1; }).catch(() => {});
+                });
+            } else {
+                btn.innerHTML = '<span class="text-base">🔇</span> Enable Audio';
+                btn.className = 'px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold border border-red-200 hover:bg-red-200 transition-colors flex items-center gap-1 shadow-sm';
+                if (window.speechSynthesis) window.speechSynthesis.cancel();
+            }
+        }
+
+        function playBidAnnouncement(teamName, amount) {
+            if (!isAudioEnabled || !window.speechSynthesis) return; 
+            
+            // Cancel any currently playing speech to keep it snappy
+            window.speechSynthesis.cancel();
+            
+            // Format team name for better pronunciation (e.g., "AP11" -> "AP 11")
+            let pronouncedTeam = teamName.replace(/(\d+)/g, ' $1');
+            
+            // Create the speech ("30 dollars, AP 11")
+            const utterance = new SpeechSynthesisUtterance(`${amount} dollars, ${pronouncedTeam}`);
+            utterance.rate = 1.1; // Slightly faster for an auction feel
+            utterance.pitch = 1.0;
+            
+            window.speechSynthesis.speak(utterance);
+        }
+
         function setupRealtimeListeners() {
             // 1. Sync Players Collection
-            onValue(playersRef, (snapshot) => {
-                const playersList = [];
-                snapshot.forEach(childSnap => {
-                    playersList.push({ id: childSnap.key, ...childSnap.val() });
-                });
-                populateStateFromPlayers(playersList);
-            }, (error) => console.error("Players sync error:", error));
+            if (playersRef && onValue) {
+                onValue(playersRef, (snapshot) => {
+                    const playersList = [];
+                    snapshot.forEach(childSnap => {
+                        playersList.push({ id: childSnap.key, ...childSnap.val() });
+                    });
+                    populateStateFromPlayers(playersList);
+                }, (error) => console.error("Players sync error:", error));
+            }
 
             // 2. Sync Auction State
-            onValue(auctionRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    const newData = snapshot.val();
-                    const wasActive = state.auction.isSessionActive;
-                    
-                    state.auction = { 
-                        ...state.auction, 
-                        ...newData 
-                    };
+            if (auctionRef && onValue) {
+                onValue(auctionRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const newData = snapshot.val();
+                        const wasActive = state.auction.isSessionActive;
+                        
+                        state.auction = { 
+                            ...state.auction, 
+                            ...newData 
+                        };
 
-                    // CRITICAL FIX: Ensure fields deleted by Firebase (like null) are overwritten!
-                    if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
-                    if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
-                    if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
+                        // CRITICAL FIX: Ensure fields deleted by Firebase (like null) are overwritten!
+                        if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
+                        if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
+                        if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
 
-                    // KICK OWNERS & SHOW POPUP WHEN SESSION STOPS
-                    if (wasActive === true && state.auction.isSessionActive === false) {
-                        if (state.userRole.startsWith('owner_')) {
-                            state.userRole = 'viewer';
-                            sessionStorage.removeItem('dpl_userRole'); // Clear browser memory
-                            // Force UI update to remove bidding controls
-                            if (document.getElementById('view-auction').classList.contains('active-view')) {
-                                 renderAuctionUI();
+                        // KICK OWNERS & SHOW POPUP WHEN SESSION STOPS
+                        if (wasActive === true && state.auction.isSessionActive === false) {
+                            if (state.userRole.startsWith('owner_')) {
+                                state.userRole = 'viewer';
+                                sessionStorage.removeItem('dpl_userRole'); // Clear browser memory
+                                // Force UI update to remove bidding controls
+                                if (document.getElementById('view-auction').classList.contains('active-view')) {
+                                     renderAuctionUI();
+                                }
+                            }
+                            if (state.userRole !== 'admin') {
+                                showModal("Auction Stopped", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛑</span><h3 class='font-bold text-red-600 text-xl'>Session Closed</h3><p class='text-slate-500 mt-2'>The Master Admin has stopped the auction session. You have been disconnected.</p></div>");
                             }
                         }
-                        if (state.userRole !== 'admin') {
-                            showModal("Auction Stopped", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛑</span><h3 class='font-bold text-red-600 text-xl'>Session Closed</h3><p class='text-slate-500 mt-2'>The Master Admin has stopped the auction session. You have been disconnected.</p></div>");
-                        }
-                    }
 
-                    // SELF-HEALING: If an owner refreshed the page, their browser remembers they are logged in,
-                    // but Firebase might have lost their "presence" in the array. This re-adds them automatically!
-                    if (state.auction.isSessionActive && state.userRole.startsWith('owner_')) {
-                        const myTeam = state.userRole.replace('owner_', '');
-                        if (state.auction.loggedInOwners && !state.auction.loggedInOwners.includes(myTeam)) {
-                            state.auction.loggedInOwners.push(myTeam);
-                            saveAuctionState();
+                        // SELF-HEALING: If an owner refreshed the page, their browser remembers they are logged in,
+                        // but Firebase might have lost their "presence" in the array. This re-adds them automatically!
+                        if (state.auction.isSessionActive && state.userRole.startsWith('owner_')) {
+                            const myTeam = state.userRole.replace('owner_', '');
+                            if (state.auction.loggedInOwners && !state.auction.loggedInOwners.includes(myTeam)) {
+                                state.auction.loggedInOwners.push(myTeam);
+                                saveAuctionState();
+                            }
                         }
-                    }
 
-                } else {
-                    saveAuctionState(); 
-                }
-                
-                try {
-                    if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-                    if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
-                } catch(e) {
-                    console.error("UI Render Error:", e);
-                }
-            }, (error) => console.error("Auction sync error:", error));
+                    } else {
+                        saveAuctionState(); 
+                    }
+                    
+                    try {
+                        if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+                        if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+                    } catch(e) {
+                        console.error("UI Render Error:", e);
+                    }
+                }, (error) => console.error("Auction sync error:", error));
+            }
 
             // 3. Sync Live Score
-            onValue(liveScoreRef, (snapshot) => {
-                if (snapshot.exists()) {
-                    state.liveScore = { ...state.liveScore, ...snapshot.val() };
-                    applyLiveScoreState();
-                }
-            }, (error) => console.error("Score sync error:", error));
+            if (liveScoreRef && onValue) {
+                onValue(liveScoreRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        state.liveScore = { ...state.liveScore, ...snapshot.val() };
+                        applyLiveScoreState();
+                    }
+                }, (error) => console.error("Score sync error:", error));
+            }
         }
 
         function saveAuctionState() {
-            if (!isFirebaseReady) return;
+            if (!isFirebaseReady || !set || !auctionRef) return;
             set(auctionRef, state.auction).catch(e => console.error("Failed to save auction:", e));
         }
 
         function saveLiveScoreState() {
-            if (!isFirebaseReady) return;
+            if (!isFirebaseReady || !set || !liveScoreRef) return;
             set(liveScoreRef, state.liveScore).catch(e => console.error("Failed to save score:", e));
         }
 
@@ -1296,7 +1358,7 @@
         }
 
         async function assignPlayerToTeam(player, teamName, price = null) {
-            if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
+            if (!isFirebaseReady || !update) return { status: 'error', message: 'Database not ready.' };
             const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
             const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
             await update(pRef, { team: teamName, price: priceVal });
@@ -1304,7 +1366,7 @@
         }
 
         async function removePlayerFromTeam(player, mode) {
-            if (!isFirebaseReady) return { status: 'error', message: 'Database not ready.' };
+            if (!isFirebaseReady || !update || !remove) return { status: 'error', message: 'Database not ready.' };
             const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
             if (mode === 'delete') {
                 await remove(pRef);
@@ -1527,8 +1589,6 @@
             });
         }
 
-        let lastAuctionStatus = 'waiting';
-
         function renderAuctionUI() {
             const uiWait = document.getElementById('stage-waiting');
             const uiActive = document.getElementById('stage-active');
@@ -1538,20 +1598,41 @@
             if(!uiWait || !uiActive || !stamp) return;
 
             if (state.auction.status === 'sold' && lastAuctionStatus !== 'sold') {
-                if (state.auction.highestBidder) {
-                    audioSold.currentTime = 0;
-                    audioSold.play().catch(e => console.log('Audio blocked:', e));
-                } else {
-                    audioUnsold.currentTime = 0;
-                    audioUnsold.play().catch(e => console.log('Audio blocked:', e));
+                if (isAudioEnabled) {
+                    if (state.auction.highestBidder) {
+                        audioSold.currentTime = 0;
+                        audioSold.play().catch(e => console.log('Audio blocked:', e));
+                    } else {
+                        audioUnsold.currentTime = 0;
+                        audioUnsold.play().catch(e => console.log('Audio blocked:', e));
+                    }
                 }
             }
             if (state.auction.status === 'warning' && lastAuctionStatus !== 'warning') {
-                audioTic.currentTime = 0;
-                audioTic.play().catch(e => console.log('Audio blocked:', e));
+                if (isAudioEnabled) {
+                    audioTic.currentTime = 0;
+                    audioTic.play().catch(e => console.log('Audio blocked:', e));
+                }
             }
             lastAuctionStatus = state.auction.status;
             
+            // --- NEW: Bid Announcement Logic ---
+            if (state.auction.status === 'active' || state.auction.status === 'warning') {
+                if (state.auction.highestBidder && 
+                   (state.auction.currentBid !== lastBidAmount || state.auction.highestBidder !== lastBidder)) {
+                    
+                    playBidAnnouncement(state.auction.highestBidder, state.auction.currentBid);
+                    
+                    lastBidAmount = state.auction.currentBid;
+                    lastBidder = state.auction.highestBidder;
+                }
+            } else if (state.auction.status === 'waiting') {
+                // Reset trackers for the next player
+                lastBidAmount = 0;
+                lastBidder = null;
+            }
+            // -----------------------------------
+
             if (state.auction.status === 'waiting') {
                 uiWait.classList.remove('hide');
                 uiActive.classList.add('hide');
@@ -1672,7 +1753,7 @@
                                         <button onclick="placeOwnerBid('${team}', 50)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$50</button>
                                         <button onclick="placeOwnerBid('${team}', 100)" class="py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black italic text-[10px] sm:text-xs hover:scale-105 hover:border-white/30 transition-all shadow-sm">+$100</button>
                                     </div>
-                                    <button onclick="ownerPassBid('${team}')" class="w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all">Fold / Pass</button>
+                                    <button onclick="ownerPassBid('${team}')" class="w-full py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl bg-red-500/10 hover:red-500/20 text-red-400 border border-red-500/20 font-black uppercase tracking-widest text-[9px] sm:text-[10px] transition-all">Fold / Pass</button>
                                 </div>`;
                             }
                         } else {
@@ -2056,7 +2137,7 @@
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; btn.disabled = true;
             try {
-                if (!isFirebaseReady) throw new Error("Database not ready.");
+                if (!isFirebaseReady || !set || !get) throw new Error("Database not ready.");
                 const name = formatName(document.getElementById('reg-name').value);
                 const mobile = document.getElementById('reg-mobile').value;
                 const role = document.getElementById('reg-role').value;
@@ -2081,7 +2162,7 @@
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Checking..."; btn.disabled = true;
             try {
-                if (!isFirebaseReady) throw new Error("Database not ready.");
+                if (!isFirebaseReady || !get) throw new Error("Database not ready.");
                 const mobile = document.getElementById('login-mobile').value;
                 const pin = document.getElementById('login-pin').value;
                 
@@ -2173,7 +2254,9 @@
             if (viewId === 'adminpanel') renderAdminPanel();
 
             // Save the view to localStorage so it stays across page refreshes!
-            localStorage.setItem('dpl_current_view', viewId);
+            try {
+                localStorage.setItem('dpl_current_view', viewId);
+            } catch(e) {}
         }
 
         function switchAdminTab(type) {
@@ -2247,45 +2330,13 @@
             if (isOpen) { nav.classList.remove('translate-x-full'); document.body.style.overflow = 'hidden'; } else { nav.classList.add('translate-x-full'); document.body.style.overflow = ''; }
         }
 
-        // Module exports to global window
-        window.navigateTo = navigateTo;
-        window.toggleMobileMenu = toggleMobileMenu;
-        window.switchInnerTab = switchInnerTab;
-        window.adminToggleAuctionStage = adminToggleAuctionStage;
-        window.adminGiveWarning = adminGiveWarning;
-        window.adminLockAndSell = adminLockAndSell;
-        window.placeOwnerBid = placeOwnerBid;
-        window.ownerPassBid = ownerPassBid;
-        window.adminReviveTeam = adminReviveTeam;
-        window.handleOwnerLogin = handleOwnerLogin;
-        window.handleAdminLogin = handleAdminLogin;
-        window.handleAdminLogout = handleAdminLogout;
-        window.switchAdminTab = switchAdminTab;
-        window.adminNextPlayer = adminNextPlayer;
-        window.adminPrevPlayer = adminPrevPlayer;
-        window.adminAssignPlayer = adminAssignPlayer;
-        window.toggleUnassignedSelection = toggleUnassignedSelection;
-        window.toggleSelectAllUnassigned = toggleSelectAllUnassigned;
-        window.confirmAdminRemovePlayer = confirmAdminRemovePlayer;
-        window.adminRemovePlayerAction = adminRemovePlayerAction;
-        window.downloadPlayerDataCSV = downloadPlayerDataCSV;
-        window.forceScoreUpdate = forceScoreUpdate;
-        window.handleVillageChange = handleVillageChange;
-        window.handlePlayerRegistration = handlePlayerRegistration;
-        window.handlePlayerLogin = handlePlayerLogin;
-        window.handlePlayerLogout = handlePlayerLogout;
-        window.showTeamModal = showTeamModal;
-        window.closeModal = closeModal;
-        window.adminToggleSession = adminToggleSession;
-        window.adminResetCurrentAuction = adminResetCurrentAuction;
-        window.confirmBulkDeleteUnassigned = confirmBulkDeleteUnassigned;
-        window.bulkDeleteSelectedUnassigned = bulkDeleteSelectedUnassigned;
-
         // Restore the last active view if it exists in memory
-        const lastView = localStorage.getItem('dpl_current_view');
-        if (lastView && document.getElementById(`view-${lastView}`)) {
-            navigateTo(lastView);
-        }
+        try {
+            const lastView = localStorage.getItem('dpl_current_view');
+            if (lastView && document.getElementById(`view-${lastView}`)) {
+                navigateTo(lastView);
+            }
+        } catch(e) {}
 
         // Init
         initFirebase();
