@@ -2205,7 +2205,7 @@
 
         function handleAdminLogin(e) {
             e.preventDefault(); const user = document.getElementById('admin-username').value.toLowerCase(); const pass = document.getElementById('admin-password').value;
-            if (user === 'admin' && pass === ' 1609') { 
+            if (user === 'admin' && pass === '1609') { 
                 state.userRole = 'admin'; 
                 state.isAdmin = true; 
                 StorageUtil.set('sessionStorage', 'dpl_userRole', 'admin');
