@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+  <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 
 <head>
@@ -11,6 +11,7 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -33,7 +34,7 @@
                         document.documentElement.style.visibility = '';
                     });
                 }
-            } catch (e) {
+            } catch(e) {
                 // Ignore localStorage errors in strict iframe environments
             }
         })();
@@ -90,12 +91,27 @@
         .btn-secondary:hover { background-color: #f8fafc; color: #1e293b; border-color: #94a3b8; }
         .clean-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 0.75rem; padding: 0.75rem 1rem; background-color: #ffffff; transition: all 0.2s; }
         .clean-input:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+        .ball-circle { width: 34px; height: 34px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.8rem; color: #ffffff; flex-shrink: 0; border: 2px solid rgba(255, 255, 255, 0.08); }
+        .ball-0 { background: #64748b; }
+        .ball-1, .ball-2, .ball-3 { background: #3b82f6; }
+        .ball-4 { background: #10b981; box-shadow: 0 0 12px rgba(16, 185, 129, 0.45); }
+        .ball-6 { background: #8b5cf6; animation: pulse-purple 1.4s infinite; }
+        .ball-W { background: #ef4444; animation: pulse-wicket 1s infinite; }
+        .ball-ex { background: #f59e0b; }
+        .score-btn { padding: 1rem; border-radius: 1rem; font-weight: 900; transition: all 0.12s ease; background: #0f172a; color: #ffffff; border: 1px solid #334155; cursor: pointer; }
+        .score-btn:hover { background: #1e293b; transform: scale(1.04); }
+        .score-btn:active { transform: scale(0.96); }
+        .btn-4 { background: #059669; border-color: #10b981; }
+        .btn-6 { background: #7c3aed; border-color: #8b5cf6; }
+        .btn-w { background: #dc2626; border-color: #ef4444; }
 
         /* View Manager */
         .app-view { display: none; animation: fadeIn 0.4s ease-in-out; }
         .app-view.active-view { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .hide { display: none !important; }
+        @keyframes pulse-wicket { 0% { transform: scale(1); } 50% { transform: scale(1.08); box-shadow: 0 0 14px rgba(239, 68, 68, 0.7); } 100% { transform: scale(1); } }
+        @keyframes pulse-purple { 0% { box-shadow: 0 0 0 rgba(139, 92, 246, 0); } 50% { box-shadow: 0 0 16px rgba(139, 92, 246, 0.65); } 100% { box-shadow: 0 0 0 rgba(139, 92, 246, 0); } }
 
         /* --- GEN-Z NAVIGATION STYLES --- */
         .nav-link, .mobile-nav-link, .tab-btn {
@@ -392,11 +408,12 @@
                     <div id="content-league-rules" class="hide">
                         <h2 class="text-2xl font-bold mb-6">Structure & Rules</h2>
                         <ul class="space-y-4 text-slate-700">
-                            <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">1.</span><div><strong>Match Format:</strong> Strictly T6 (6 Overs per inning). 60-minute match duration.</div></li>
+                            <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">1.</span><div><strong>Match Format:</strong> Admin can set overs per innings for each match. Tournament progression uses saved results automatically.</div></li>
                             <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">2.</span><div><strong>Player Eligibility:</strong> <span class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded text-sm font-bold ml-1">MUST BE DESHGAVHAN DOMICILE</span>. Outside players are strictly prohibited.</div></li>
                             <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">3.</span><div><strong>Auction:</strong> All teams have an equal virtual purse. Base prices determined by committee.</div></li>
                         </ul>
                     </div>
+                    <div id="league-tournament-status" class="mt-8 p-5 rounded-2xl border border-slate-200 bg-slate-50"></div>
                 </div>
             </div>
         </div>
@@ -436,7 +453,7 @@
             </div>
 
             <!-- THE CINEMATIC STAGE -->
-            <div class="auction-stage rounded-3xl p-6 sm:p-10 mb-8 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center min-h-[50vh]">
+            <div class="auction-stage rounded-3xl p-5 sm:p-8 mb-8 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center min-h-[38vh]">
                 <div class="absolute inset-0 energy-grid opacity-20 pointer-events-none z-0"></div>
                 
                 <!-- SOLD STAMP ANIMATION -->
@@ -459,8 +476,8 @@
                     </div>
 
                     <!-- Player Name (Glitch effect applied on new load) -->
-                    <h2 id="auction-player-name" class="text-5xl sm:text-7xl md:text-8xl font-black text-white italic transform -skew-x-6 tracking-tighter mb-2 drop-shadow-2xl">---</h2>
-                    <p id="auction-player-role" class="text-xl sm:text-2xl font-bold text-blue-400 tracking-widest uppercase mb-8 sm:mb-12">---</p>
+                    <h2 id="auction-player-name" class="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-2 drop-shadow-2xl">---</h2>
+                    <p id="auction-player-role" class="text-base sm:text-xl font-bold text-blue-400 tracking-widest uppercase mb-6 sm:mb-8">---</p>
 
                     <!-- Central Bid Display -->
                     <div class="w-full max-w-lg mx-auto bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-700 p-6 sm:p-8 mb-8 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
@@ -491,18 +508,31 @@
                 <!-- Generated by JS depending on Role -->
             </div>
 
-            <!-- LIVE ROSTERS (Always visible on Auction Page) -->
-            <div id="auction-bottom-section" class="mt-12 pt-8 border-t border-slate-300">
-                <div class="max-w-4xl mx-auto">
+            <!-- LIVE ROSTERS & UNASSIGNED POOL (Always visible on Auction Page) -->
+            <div id="auction-bottom-section" class="mt-8 pt-6 border-t border-slate-300">
+                <div class="grid grid-cols-1 gap-8">
+                    
                     <!-- Teams Roster Access (Visible to Everyone) -->
                     <div>
-                        <h3 class="text-sm font-black uppercase text-slate-500 mb-4 tracking-widest flex items-center justify-center gap-2">
+                        <h3 class="text-sm font-black uppercase text-slate-500 mb-4 tracking-widest flex items-center gap-2">
                             <span class="text-blue-500">👥</span> Live Rosters
                         </h3>
-                        <div class="flex flex-wrap justify-center gap-3" id="auction-teams-buttons">
+                        <div class="flex flex-wrap gap-3" id="auction-teams-buttons">
                             <!-- Populated by JS -->
                         </div>
                     </div>
+
+                    <!-- Upcoming Players (Admin/Owners Only) -->
+                    <div id="auction-upcoming-players-container" class="hide">
+                        <h3 class="text-sm font-black uppercase text-slate-500 mb-4 tracking-widest flex justify-between items-center">
+                            <span class="flex items-center gap-2"><span class="text-amber-500">⏳</span> Upcoming Pool</span>
+                            <span class="text-[9px] bg-slate-800 text-slate-300 px-2 py-1 rounded-md">Admin / Owner View</span>
+                        </h3>
+                        <div class="bg-slate-900 rounded-2xl border border-slate-700/50 shadow-[0_10px_30px_rgba(0,0,0,0.2)] overflow-hidden h-56 overflow-y-auto relative" id="auction-upcoming-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -517,34 +547,9 @@
                 <h1 class="text-2xl sm:text-3xl font-bold text-slate-900">Live Match Center</h1>
             </div>
 
-            <div class="clean-card bg-slate-900 text-white p-6 md:p-10 mb-8 border-slate-800 shadow-2xl">
-                <div class="flex flex-col md:flex-row justify-between items-center gap-6 sm:gap-8">
-                    <!-- Team 1 -->
-                    <div class="text-center w-full md:w-1/3">
-                        <h2 id="live-team-1" class="text-xl md:text-2xl font-bold text-slate-300">AP11</h2>
-                        <div class="text-5xl md:text-7xl font-black text-emerald-400 tracking-tighter mt-2" id="live-score-1">112<span class="text-3xl md:text-4xl text-emerald-200">/4</span></div>
-                        <p class="text-slate-400 mt-2 font-mono" id="live-overs-1">Overs: 8.2 / 10</p>
-                    </div>
-
-                    <!-- VS -->
-                    <div class="text-slate-500 font-black text-xl sm:text-2xl italic">VS</div>
-
-                    <!-- Team 2 -->
-                    <div class="text-center w-full md:w-1/3">
-                        <h2 id="live-team-2" class="text-xl md:text-2xl font-bold text-slate-300">Cotton11</h2>
-                        <div id="live-score-2" class="text-2xl sm:text-3xl font-bold text-slate-500 mt-2 sm:mt-4">Yet to bat</div>
-                    </div>
-                </div>
-
-                <div class="border-t border-slate-700 mt-6 sm:mt-8 pt-6 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
-                    <div>
-                        <p class="text-slate-400 uppercase tracking-widest text-xs mb-2">Current Batters</p>
-                        <div class="flex justify-between font-bold"><span id="live-batter-1" class="text-white">Rahul D. *</span> <span class="text-amber-400">42 (18)</span></div>
-                    </div>
-                    <div class="border-t border-slate-800 pt-4 sm:border-0 sm:pt-0">
-                        <p class="text-slate-400 uppercase tracking-widest text-xs mb-2">Current Bowler</p>
-                        <div class="flex justify-between font-bold"><span id="live-bowler" class="text-white">Jasprit</span> <span class="text-blue-400">2-18 (1.2)</span></div>
-                    </div>
+            <div id="public-match-container">
+                <div class="p-20 text-center clean-card bg-white border border-slate-100 shadow-sm">
+                    <p class="text-slate-400 font-black uppercase tracking-widest animate-pulse">Waiting for match broadcast...</p>
                 </div>
             </div>
         </div>
@@ -556,7 +561,7 @@
             <h1 class="text-3xl font-bold text-slate-900 mb-6">Stats Dashboard 📊</h1>
             <div class="grid lg:grid-cols-3 gap-6 mb-8">
                 <!-- AI Ranking -->
-                <div class="clean-card p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
+                <div id="stats-potm-card" class="clean-card p-6 bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100">
                     <h2 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">🧠 AI Player Ranking</h2>
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-50 mb-3 flex items-center gap-4">
                         <div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-600 shrink-0">#1</div>
@@ -570,7 +575,7 @@
                 <!-- Leaderboard Bat -->
                 <div class="clean-card p-0 overflow-hidden">
                     <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-slate-700">Top Batsmen</div>
-                    <ul class="divide-y divide-slate-100 text-sm">
+                    <ul id="stats-top-batters" class="divide-y divide-slate-100 text-sm">
                         <li class="p-4 flex justify-between items-center"><span class="font-medium">1. Ratan Huse</span><span class="font-bold text-blue-600">412 Runs</span></li>
                         <li class="p-4 flex justify-between items-center"><span class="font-medium">2. Deepak Karad</span><span class="font-bold text-blue-600">385 Runs</span></li>
                     </ul>
@@ -579,7 +584,7 @@
                 <!-- Leaderboard Bowl -->
                 <div class="clean-card p-0 overflow-hidden">
                     <div class="bg-slate-50 px-4 py-3 border-b border-slate-100 font-bold text-slate-700">Top Bowlers</div>
-                    <ul class="divide-y divide-slate-100 text-sm">
+                    <ul id="stats-top-bowlers" class="divide-y divide-slate-100 text-sm">
                         <li class="p-4 flex justify-between items-center"><span class="font-medium">1. Gajanan Devare</span><span class="font-bold text-emerald-600">24 Wkts</span></li>
                         <li class="p-4 flex justify-between items-center"><span class="font-medium">2. Rushikesh</span><span class="font-bold text-emerald-600">21 Wkts</span></li>
                     </ul>
@@ -591,6 +596,23 @@
                 <h2 class="text-lg font-bold text-slate-900 mb-6">Tournament Scoring Trends</h2>
                 <div class="chart-container overflow-x-auto w-full">
                     <div class="min-w-[400px] h-[300px]"><canvas id="statsChart"></canvas></div>
+                </div>
+            </div>
+
+            <div class="grid xl:grid-cols-[0.95fr_1.05fr] gap-6 mt-8">
+                <div class="clean-card p-4 sm:p-6 overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <h2 class="text-lg font-bold text-slate-900">Points Table</h2>
+                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Auto NRR</span>
+                    </div>
+                    <div id="points-table-container" class="overflow-x-auto"></div>
+                </div>
+                <div class="clean-card p-4 sm:p-6 overflow-hidden">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <h2 class="text-lg font-bold text-slate-900">Match History</h2>
+                        <span class="text-xs font-bold uppercase tracking-widest text-slate-400">Firebase Archive</span>
+                    </div>
+                    <div id="match-history-container" class="space-y-4"></div>
                 </div>
             </div>
         </div>
@@ -728,6 +750,35 @@
                                         <span id="profile-status-text">Awaiting Bid</span>
                                     </p>
                                 </div>
+                                <div class="bg-blue-50 p-5 rounded-2xl border border-blue-100 text-center md:text-left">
+                                    <p class="text-xs font-bold text-blue-600/70 uppercase tracking-widest mb-1">Matches</p>
+                                    <p id="profile-matches" class="font-bold text-blue-700 text-lg">0</p>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                                <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Runs</p>
+                                    <p id="profile-runs" class="font-black text-slate-900 text-2xl">0</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Balls Faced</p>
+                                    <p id="profile-balls-faced" class="font-black text-slate-900 text-2xl">0</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Wickets</p>
+                                    <p id="profile-wickets" class="font-black text-slate-900 text-2xl">0</p>
+                                </div>
+                                <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                                    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Overs Bowled</p>
+                                    <p id="profile-overs-bowled" class="font-black text-slate-900 text-2xl">0.0</p>
+                                </div>
+                            </div>
+                            <div class="bg-white p-5 rounded-2xl border border-slate-100">
+                                <div class="flex items-center justify-between gap-3 mb-4">
+                                    <h3 class="text-sm font-black uppercase tracking-widest text-slate-900">Match Log</h3>
+                                    <span class="text-[10px] uppercase tracking-widest text-slate-400 font-black">Auto from scorecards</span>
+                                </div>
+                                <div id="profile-match-log" class="space-y-3"></div>
                             </div>
                         </div>
                     </div>
@@ -813,7 +864,7 @@
                     <button onclick="navigateTo('auction')" class="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-blue-500/50 text-blue-600 font-bold uppercase tracking-widest text-xs hover:bg-blue-50 transition-all shadow-[0_0_15px_rgba(59,130,246,0.1)]">
                         🔴 Go to Live Draft Desk
                     </button>
-                    <button onclick="handleAdminLogout()" class="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-500/50 text-red-500 font-bold uppercase tracking-widest text-xs hover:bg-red-50 hover:text-white transition-all shadow-[0_0_15px_rgba(220,38,38,0.1)]">
+                    <button onclick="handleAdminLogout()" class="shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-xl border border-red-500/50 text-red-500 font-bold uppercase tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(220,38,38,0.1)]">
                         🔒 Terminate Session
                     </button>
                 </div>
@@ -828,7 +879,7 @@
                     </div>
                     <div class="text-center md:text-left">
                         <span class="text-[10px] font-bold text-[#D4AF37]/60 uppercase tracking-[0.25em]">Authorized Administrator</span>
-                        <h2 class="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 uppercase tracking-tight transform -skew-x-3 mt-0.5">Avinash Huse</h2>
+                        <h2 class="text-3xl md:text-4xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] to-yellow-200 uppercase tracking-tight transform -skew-x-3 mt-0.5">Amol Huse</h2>
                         <p class="text-base font-bold text-white/80 mt-1">ARc next Pvt Ltd</p>
                     </div>
                     <div class="md:ml-auto flex flex-col gap-3 text-right">
@@ -925,6 +976,45 @@
                 </div>
             </div>
 
+            <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-indigo-600 to-blue-700 text-white">
+                    <span class="text-xl">📅</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">League Fixture Manager</h2>
+                        <p class="text-blue-100 text-xs">Admin chooses Match 1, the remaining league schedule is created automatically.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div class="grid md:grid-cols-[1fr_1fr_auto_auto] gap-4 items-end">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Match 1 Team A</label>
+                            <select id="fixture-first-team" class="clean-input bg-slate-50">
+                                <option value="">Select team</option>
+                                <option value="AP11">AP11</option>
+                                <option value="Cotton11">Cotton11</option>
+                                <option value="Balkrushna11">Balkrushna11</option>
+                                <option value="Ajinkya Classes11">Ajinkya Classes11</option>
+                                <option value="Ankushraj11">Ankushraj11</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Match 1 Team B</label>
+                            <select id="fixture-second-team" class="clean-input bg-slate-50">
+                                <option value="">Select team</option>
+                                <option value="AP11">AP11</option>
+                                <option value="Cotton11">Cotton11</option>
+                                <option value="Balkrushna11">Balkrushna11</option>
+                                <option value="Ajinkya Classes11">Ajinkya Classes11</option>
+                                <option value="Ankushraj11">Ankushraj11</option>
+                            </select>
+                        </div>
+                        <button onclick="generateFixturesFromAdmin()" class="px-6 py-3 rounded-xl bg-indigo-600 text-white font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition-colors">Fix Schedule</button>
+                        <button onclick="resetFixtures()" class="px-6 py-3 rounded-xl bg-slate-100 text-slate-700 font-black uppercase tracking-widest text-xs hover:bg-slate-200 transition-colors">Reset</button>
+                    </div>
+                    <div id="admin-fixture-summary" class="mt-6"></div>
+                </div>
+            </div>
+
             <!-- DIRECTIVE 2: Force Live Score Updates -->
             <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg">
                 <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-teal-700 text-white">
@@ -967,6 +1057,44 @@
                 </div>
             </div>
 
+            <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-slate-900 via-blue-900 to-cyan-800 text-white">
+                    <span class="text-xl">🏏</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">Live Match Scoring Hub</h2>
+                        <p class="text-cyan-100 text-xs">Ball-by-ball scoring with instant public sync.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div class="grid lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2">
+                            <div class="clean-card overflow-hidden shadow-xl border-emerald-100">
+                                <div class="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-4 text-white flex justify-between items-center gap-3">
+                                    <h3 class="font-black uppercase tracking-widest text-sm">Match Console</h3>
+                                    <div class="flex gap-2">
+                                        <button onclick="showMatchSetup()" class="text-[10px] bg-white text-emerald-700 font-black px-3 py-1 rounded-full uppercase shadow-sm border border-emerald-500">Create Match</button>
+                                        <button onclick="adminResetMatch()" class="text-[10px] bg-black/20 hover:bg-black/40 px-2 py-1 rounded border border-white/20 uppercase font-bold">Clear All</button>
+                                    </div>
+                                </div>
+                                <div id="admin-scoring-container" class="p-6">
+                                    <div class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest">
+                                        Awaiting match initialization...
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="clean-card p-6 bg-slate-900 text-white h-full min-h-[380px] border border-slate-800">
+                                <h3 class="font-black uppercase text-xs tracking-widest text-slate-500 mb-4 border-b border-slate-800 pb-2">Ball-by-Ball Feed</h3>
+                                <div id="admin-ball-log" class="space-y-2 h-[420px] overflow-y-auto pr-2 text-xs font-mono">
+                                    <p class="text-slate-600 italic">Scoring engine ready.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- DIRECTIVE 3: Approve Roster Changes -->
             <div class="clean-card p-0 overflow-hidden mb-8 border-slate-200 shadow-lg">
                 <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-600 text-white">
@@ -978,6 +1106,42 @@
                 </div>
                 <div class="p-4 sm:p-6">
                     <div id="admin-roster-view" class="grid md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+                </div>
+            </div>
+
+            <div class="clean-card p-0 overflow-hidden mb-8 border-slate-200 shadow-lg">
+                <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-emerald-600 to-lime-600 text-white">
+                    <span class="text-xl">➕</span>
+                    <div>
+                        <h2 class="font-black uppercase tracking-wide text-base">Admin Add Player</h2>
+                        <p class="text-emerald-100 text-xs">Add a player directly to a team and mark them as Icon or Choice.</p>
+                    </div>
+                </div>
+                <div class="p-4 sm:p-6">
+                    <div class="grid md:grid-cols-3 gap-4">
+                        <input type="text" id="admin-add-name" class="clean-input bg-slate-50" placeholder="Player name">
+                        <input type="tel" id="admin-add-mobile" class="clean-input bg-slate-50" placeholder="Mobile">
+                        <input type="password" id="admin-add-pin" maxlength="4" class="clean-input bg-slate-50" placeholder="4-digit PIN">
+                        <select id="admin-add-role" class="clean-input bg-slate-50">
+                            <option value="Batsman">Batsman</option>
+                            <option value="Bowler">Bowler</option>
+                            <option value="All-Rounder">All-Rounder</option>
+                            <option value="Keeper">Keeper</option>
+                        </select>
+                        <select id="admin-add-team" class="clean-input bg-slate-50">
+                            <option value="Unassigned">Unassigned</option>
+                            <option value="AP11">AP11</option>
+                            <option value="Cotton11">Cotton11</option>
+                            <option value="Balkrushna11">Balkrushna11</option>
+                            <option value="Ajinkya Classes11">Ajinkya Classes11</option>
+                            <option value="Ankushraj11">Ankushraj11</option>
+                        </select>
+                        <select id="admin-add-tag" class="clean-input bg-slate-50">
+                            <option value="Choice">Choice</option>
+                            <option value="Icon">Icon</option>
+                        </select>
+                    </div>
+                    <button onclick="adminAddPlayerDirect()" class="mt-4 px-6 py-3 rounded-xl bg-emerald-600 text-white font-black uppercase tracking-widest text-xs hover:bg-emerald-700 transition-colors">Add Player</button>
                 </div>
             </div>
 
@@ -1014,13 +1178,6 @@
 
     <!-- Firebase Real-Time Integration Script -->
     <script>
-        // Safe Storage Wrapper to prevent strict iframe security crashes
-        const StorageUtil = {
-            get: function(type, key) { try { return window[type].getItem(key); } catch(e) { return null; } },
-            set: function(type, key, val) { try { window[type].setItem(key, val); } catch(e) {} },
-            remove: function(type, key) { try { window[type].removeItem(key); } catch(e) {} }
-        };
-
         // --- 1. Master State ---
         const state = {
             teams: { 'AP11': [], 'Cotton11': [], 'Balkrushna11': [], 'Ajinkya Classes11': [], 'Ankushraj11': [] },
@@ -1033,8 +1190,8 @@
             selectedUnassignedPlayers: [],
             chartInitialized: false,
             
-            isAdmin: StorageUtil.get('sessionStorage', 'dpl_isAdmin') === 'true', 
-            userRole: StorageUtil.get('sessionStorage', 'dpl_userRole') || 'viewer', 
+            isAdmin: sessionStorage.getItem('dpl_isAdmin') === 'true', 
+            userRole: sessionStorage.getItem('dpl_userRole') || 'viewer', 
             
             // Firebase Synchronized
             auction: {
@@ -1048,7 +1205,48 @@
                 loggedInOwners: [] 
             },
 
-            liveScore: { team1: 'AP11', score1: '112/4 (8.2 ov)', team2: 'Cotton11', score2: 'Yet to bat', batter: 'Rahul D. *', bowler: 'Jasprit' }
+            liveScore: { team1: 'AP11', score1: '112/4 (8.2 ov)', team2: 'Cotton11', score2: 'Yet to bat', batter: 'Rahul D. *', bowler: 'Jasprit' },
+            liveMatch: {
+                status: 'setup',
+                matchId: '',
+                fixtureId: '',
+                stage: 'league',
+                matchNumber: 0,
+                matchLabel: '',
+                archived: false,
+                playerOfTheMatch: null,
+                team1: '',
+                team2: '',
+                tossWinner: '',
+                tossDecision: '',
+                battingTeam: '',
+                bowlingTeam: '',
+                score: 0,
+                wickets: 0,
+                overs: 0,
+                balls: 0,
+                target: 0,
+                oversLimit: 6,
+                innings: 1,
+                innings1Summary: null,
+                innings2Summary: null,
+                striker: { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                nonStriker: { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                bowler: { name: '', overs: 0, balls: 0, runs: 0, wickets: 0 },
+                battingCard: [],
+                bowlingCard: [],
+                recentBalls: [],
+                needNewBatter: false,
+                needNewBowler: false
+            },
+            matches: [],
+            fixtures: {
+                generated: false,
+                generatedAt: 0,
+                firstMatch: { team1: '', team2: '' },
+                leagueMatches: []
+            },
+            liveTab: 'guide'
         };
 
         const teamConfig = {
@@ -1059,11 +1257,7 @@
             'Ankushraj11': { name: 'Ankushraj', glow: 'rgba(168, 85, 247, 0.6)', border: '#a855f7', grad: 'from-purple-500 to-pink-500', owner: 'Yogesh Huse Sir' }
         };
 
-        // --- Global Variables ---
-        let fbApp, fbAuth, fbDb;
-        let app, auth, db, isFirebaseReady = false;
-        let auctionRef, liveScoreRef, playersRef;
-        
+        // --- Firebase Setup ---
         const firebaseConfig = {
             apiKey: "AIzaSyA_npEi4PwFVmcQpr11wRFJnLOXiW4NHHw",
             authDomain: "live-auction-a3043.firebaseapp.com",
@@ -1073,37 +1267,41 @@
             messagingSenderId: "940960327246",
             appId: "1:940960327246:web:89a457d38594eb8885451f"
         };
+
+        let app, auth, db, isFirebaseReady = false;
+        
         const rawAppId = typeof __app_id !== 'undefined' ? __app_id : 'dpl-central-app';
         const appId = rawAppId.replace(/[.#$[\]/]/g, '_'); 
+        
+        let auctionRef, liveScoreRef, liveMatchRef, matchesRef, playersRef, fixturesRef;
+        let statsChartInstance = null;
+        let set, get, update, remove, ref, onValue; // Firebase real-time DB methods
 
-        // --- Audio Variables ---
-        const audioSold = new Audio('sold.mp3');
-        const audioUnsold = new Audio('unsold.mp3');
-        const audioTic = new Audio('tic1.mp3');
-        audioSold.preload = 'auto';
-        audioUnsold.preload = 'auto';
-        audioTic.preload = 'auto';
-
-        let lastAuctionStatus = 'waiting';
-        let lastBidAmount = 0;
-        let lastBidder = null;
-        let isAudioEnabled = false;
-
-        // --- Firebase Setup ---
         async function initFirebase() {
             try {
-                // Dynamic import to avoid type="module" strict isolation causing ReferenceErrors
-                fbApp = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
-                fbAuth = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
-                fbDb = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js');
-                
+                // Dynamic imports ensure that standard script logic functions instantly
+                const fbApp = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js');
+                const fbAuth = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js');
+                const fbDb = await import('https://www.gstatic.com/firebasejs/11.6.1/firebase-database.js');
+
                 app = fbApp.initializeApp(firebaseConfig);
                 auth = fbAuth.getAuth(app);
                 db = fbDb.getDatabase(app);
 
-                auctionRef = fbDb.ref(db, `artifacts/${appId}/public/data/app_state/dpl_auction_sync`);
-                liveScoreRef = fbDb.ref(db, `artifacts/${appId}/public/data/app_state/dpl_livescore_sync`);
-                playersRef = fbDb.ref(db, `artifacts/${appId}/public/data/players`);
+                // Assign DB methods globally
+                set = fbDb.set;
+                get = fbDb.get;
+                update = fbDb.update;
+                remove = fbDb.remove;
+                ref = fbDb.ref;
+                onValue = fbDb.onValue;
+                
+                auctionRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_auction_sync`);
+                liveScoreRef = ref(db, `artifacts/${appId}/public/data/app_state/dpl_livescore_sync`);
+                liveMatchRef = ref(db, `artifacts/${appId}/public/data/livematch_realtime_sync`);
+                matchesRef = ref(db, `artifacts/${appId}/public/data/matches`);
+                playersRef = ref(db, `artifacts/${appId}/public/data/players`);
+                fixturesRef = ref(db, `artifacts/${appId}/public/data/fixtures`);
 
                 let tokenSuccess = false;
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -1120,10 +1318,12 @@
                         await fbAuth.signInAnonymously(auth);
                     } catch (err) {
                         console.warn("Anonymous auth blocked by preview domain:", err.message);
+                        
                         if (!isFirebaseReady) {
                             isFirebaseReady = true;
                             setupRealtimeListeners();
                         }
+                        
                         if (err.code === 'auth/configuration-not-found' || err.code === 'auth/unauthorized-domain' || err.code === 'auth/operation-not-allowed') {
                             setTimeout(() => {
                                 showModal("Firebase Notice", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛡️</span><h3 class='font-bold text-slate-800 text-xl'>Bypassing Domain Lock</h3><p class='text-slate-500 mt-2 text-sm'>Firebase Auth blocks unknown preview domains or might not be enabled. We have bypassed this so you can test the auction.<br><br><b>Note:</b> Your Realtime Database Rules must be set to (.read: true, .write: true) for this to work.</p></div>");
@@ -1143,99 +1343,19 @@
             }
         }
 
-        function setupRealtimeListeners() {
-            if (playersRef && fbDb) {
-                fbDb.onValue(playersRef, (snapshot) => {
-                    const playersList = [];
-                    snapshot.forEach(childSnap => {
-                        playersList.push({ id: childSnap.key, ...childSnap.val() });
-                    });
-                    populateStateFromPlayers(playersList);
-                }, (error) => console.error("Players sync error:", error));
-            }
+        // --- Audio Preloading ---
+        const audioSold = new Audio('sold.mp3');
+        const audioUnsold = new Audio('unsold.mp3');
+        const audioTic = new Audio('tic1.mp3');
+        audioSold.preload = 'auto';
+        audioUnsold.preload = 'auto';
+        audioTic.preload = 'auto';
 
-            if (auctionRef && fbDb) {
-                fbDb.onValue(auctionRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        const newData = snapshot.val();
-                        const wasActive = state.auction.isSessionActive;
-                        
-                        state.auction = { ...state.auction, ...newData };
+        let lastAuctionStatus = 'waiting';
+        let lastBidAmount = 0;
+        let lastBidder = null;
+        let isAudioEnabled = false;
 
-                        if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
-                        if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
-                        if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
-
-                        if (wasActive === true && state.auction.isSessionActive === false) {
-                            if (state.userRole.startsWith('owner_')) {
-                                state.userRole = 'viewer';
-                                StorageUtil.remove('sessionStorage', 'dpl_userRole'); 
-                                if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-                            }
-                            if (state.userRole !== 'admin') {
-                                showModal("Auction Stopped", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛑</span><h3 class='font-bold text-red-600 text-xl'>Session Closed</h3><p class='text-slate-500 mt-2'>The Master Admin has stopped the auction session. You have been disconnected.</p></div>");
-                            }
-                        }
-
-                        if (state.auction.isSessionActive && state.userRole.startsWith('owner_')) {
-                            const myTeam = state.userRole.replace('owner_', '');
-                            if (state.auction.loggedInOwners && !state.auction.loggedInOwners.includes(myTeam)) {
-                                state.auction.loggedInOwners.push(myTeam);
-                                saveAuctionState();
-                            }
-                        }
-                    } else {
-                        saveAuctionState(); 
-                    }
-                    
-                    try {
-                        if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
-                        if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
-                    } catch(e) { console.error("UI Render Error:", e); }
-                }, (error) => console.error("Auction sync error:", error));
-            }
-
-            if (liveScoreRef && fbDb) {
-                fbDb.onValue(liveScoreRef, (snapshot) => {
-                    if (snapshot.exists()) {
-                        state.liveScore = { ...state.liveScore, ...snapshot.val() };
-                        applyLiveScoreState();
-                    }
-                }, (error) => console.error("Score sync error:", error));
-            }
-        }
-
-        // --- Data Mutators ---
-        function saveAuctionState() {
-            if (!isFirebaseReady || !fbDb) return;
-            fbDb.set(auctionRef, state.auction).catch(e => console.error("Failed to save auction:", e));
-        }
-
-        function saveLiveScoreState() {
-            if (!isFirebaseReady || !fbDb) return;
-            fbDb.set(liveScoreRef, state.liveScore).catch(e => console.error("Failed to save score:", e));
-        }
-        
-        async function assignPlayerToTeam(player, teamName, price = null) {
-            if (!isFirebaseReady || !fbDb) return { status: 'error', message: 'Database not ready.' };
-            const pRef = fbDb.ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
-            const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
-            await fbDb.update(pRef, { team: teamName, price: priceVal });
-            return { status: 'success' };
-        }
-
-        async function removePlayerFromTeam(player, mode) {
-            if (!isFirebaseReady || !fbDb) return { status: 'error', message: 'Database not ready.' };
-            const pRef = fbDb.ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
-            if (mode === 'delete') {
-                await fbDb.remove(pRef);
-            } else {
-                await fbDb.update(pRef, { team: 'Unassigned', price: 20 });
-            }
-            return { status: 'success' };
-        }
-
-        // --- Functions ---
         function toggleAudio() {
             isAudioEnabled = !isAudioEnabled;
             const btn = document.getElementById('btn-enable-audio');
@@ -1243,6 +1363,7 @@
                 btn.innerHTML = '<span class="text-base">🔊</span> Audio On';
                 btn.className = 'px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-300 hover:bg-emerald-200 transition-colors flex items-center gap-1 shadow-sm';
                 
+                // Silent play to unlock audio context in strict browsers
                 if (window.speechSynthesis) {
                     const unlockSpeech = new SpeechSynthesisUtterance("");
                     unlockSpeech.volume = 0;
@@ -1261,14 +1382,190 @@
 
         function playBidAnnouncement(teamName, amount) {
             if (!isAudioEnabled || !window.speechSynthesis) return; 
+            
+            // Cancel any currently playing speech to keep it snappy
             window.speechSynthesis.cancel();
+            
+            // Format team name for better pronunciation (e.g., "AP11" -> "AP 11")
             let pronouncedTeam = teamName.replace(/(\d+)/g, ' $1');
+            
+            // Create the speech ("30 dollars, AP 11")
             const utterance = new SpeechSynthesisUtterance(`${amount} dollars, ${pronouncedTeam}`);
-            utterance.rate = 1.1; 
+            utterance.rate = 1.1; // Slightly faster for an auction feel
             utterance.pitch = 1.0;
+            
             window.speechSynthesis.speak(utterance);
         }
 
+        function setupRealtimeListeners() {
+            // 1. Sync Players Collection
+            if (playersRef && onValue) {
+                onValue(playersRef, (snapshot) => {
+                    const playersList = [];
+                    snapshot.forEach(childSnap => {
+                        playersList.push({ id: childSnap.key, ...childSnap.val() });
+                    });
+                    populateStateFromPlayers(playersList);
+                }, (error) => console.error("Players sync error:", error));
+            }
+
+            // 2. Sync Auction State
+            if (auctionRef && onValue) {
+                onValue(auctionRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const newData = snapshot.val();
+                        const wasActive = state.auction.isSessionActive;
+                        
+                        state.auction = { 
+                            ...state.auction, 
+                            ...newData 
+                        };
+
+                        // CRITICAL FIX: Ensure fields deleted by Firebase (like null) are overwritten!
+                        if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
+                        if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
+                        if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
+
+                        // KICK OWNERS & SHOW POPUP WHEN SESSION STOPS
+                        if (wasActive === true && state.auction.isSessionActive === false) {
+                            if (state.userRole.startsWith('owner_')) {
+                                state.userRole = 'viewer';
+                                sessionStorage.removeItem('dpl_userRole'); // Clear browser memory
+                                // Force UI update to remove bidding controls
+                                if (document.getElementById('view-auction').classList.contains('active-view')) {
+                                     renderAuctionUI();
+                                }
+                            }
+                            if (state.userRole !== 'admin') {
+                                showModal("Auction Stopped", "<div class='text-center py-4'><span class='text-5xl mb-4 block'>🛑</span><h3 class='font-bold text-red-600 text-xl'>Session Closed</h3><p class='text-slate-500 mt-2'>The Master Admin has stopped the auction session. You have been disconnected.</p></div>");
+                            }
+                        }
+
+                        // SELF-HEALING: If an owner refreshed the page, their browser remembers they are logged in,
+                        // but Firebase might have lost their "presence" in the array. This re-adds them automatically!
+                        if (state.auction.isSessionActive && state.userRole.startsWith('owner_')) {
+                            const myTeam = state.userRole.replace('owner_', '');
+                            if (state.auction.loggedInOwners && !state.auction.loggedInOwners.includes(myTeam)) {
+                                state.auction.loggedInOwners.push(myTeam);
+                                saveAuctionState();
+                            }
+                        }
+
+                    } else {
+                        saveAuctionState(); 
+                    }
+                    
+                    try {
+                        if (document.getElementById('view-auction').classList.contains('active-view')) renderAuctionUI();
+                        if (document.getElementById('view-adminpanel').classList.contains('active-view')) renderAdminPanel();
+                    } catch(e) {
+                        console.error("UI Render Error:", e);
+                    }
+                }, (error) => console.error("Auction sync error:", error));
+            }
+
+            // 3. Sync Live Score
+            if (liveScoreRef && onValue) {
+                onValue(liveScoreRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        state.liveScore = { ...state.liveScore, ...snapshot.val() };
+                        applyLiveScoreState();
+                    }
+                }, (error) => console.error("Score sync error:", error));
+            }
+
+            if (liveMatchRef && onValue) {
+                onValue(liveMatchRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val();
+                        state.liveMatch = {
+                            ...state.liveMatch,
+                            ...data,
+                            matchId: data.matchId || '',
+                            fixtureId: data.fixtureId || '',
+                            stage: data.stage || 'league',
+                            matchNumber: data.matchNumber || 0,
+                            matchLabel: data.matchLabel || '',
+                            archived: !!data.archived,
+                            playerOfTheMatch: data.playerOfTheMatch || null,
+                            innings1Summary: data.innings1Summary || null,
+                            innings2Summary: data.innings2Summary || null,
+                            battingCard: data.battingCard || [],
+                            bowlingCard: data.bowlingCard || [],
+                            recentBalls: data.recentBalls || [],
+                            striker: data.striker || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                            nonStriker: data.nonStriker || { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                            bowler: data.bowler || { name: '', overs: 0, balls: 0, runs: 0, wickets: 0 }
+                        };
+                    } else {
+                        saveLiveMatchState();
+                    }
+                    renderPublicLiveUI();
+                    if (document.getElementById('view-adminpanel').classList.contains('active-view')) {
+                        renderLiveMatchAdminUI();
+                    }
+                }, (error) => console.error("Live match sync error:", error));
+            }
+
+            if (matchesRef && onValue) {
+                onValue(matchesRef, (snapshot) => {
+                    const matches = [];
+                    snapshot.forEach(childSnap => {
+                        matches.push({ id: childSnap.key, ...childSnap.val() });
+                    });
+                    state.matches = matches.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0));
+                    renderStatsDashboard();
+                    renderPublicLiveUI();
+                    if (state.loggedInPlayer) syncLoggedInPlayerDashboard();
+                    if (document.getElementById('view-adminpanel').classList.contains('active-view')) {
+                        renderAdminPanel();
+                    }
+                }, (error) => console.error("Match history sync error:", error));
+            }
+
+            if (fixturesRef && onValue) {
+                onValue(fixturesRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        const data = snapshot.val() || {};
+                        state.fixtures = {
+                            generated: !!data.generated,
+                            generatedAt: data.generatedAt || 0,
+                            firstMatch: data.firstMatch || { team1: '', team2: '' },
+                            leagueMatches: Array.isArray(data.leagueMatches) ? data.leagueMatches : []
+                        };
+                    } else {
+                        saveFixturesState();
+                    }
+                    renderPublicLiveUI();
+                    renderStatsDashboard();
+                    if (document.getElementById('view-adminpanel').classList.contains('active-view')) {
+                        renderAdminPanel();
+                    }
+                }, (error) => console.error("Fixture sync error:", error));
+            }
+        }
+
+        function saveAuctionState() {
+            if (!isFirebaseReady || !set || !auctionRef) return;
+            set(auctionRef, state.auction).catch(e => console.error("Failed to save auction:", e));
+        }
+
+        function saveLiveScoreState() {
+            if (!isFirebaseReady || !set || !liveScoreRef) return;
+            set(liveScoreRef, state.liveScore).catch(e => console.error("Failed to save score:", e));
+        }
+
+        function saveLiveMatchState() {
+            if (!isFirebaseReady || !set || !liveMatchRef) return;
+            set(liveMatchRef, state.liveMatch).catch(e => console.error("Failed to save live match:", e));
+        }
+
+        function saveFixturesState() {
+            if (!isFirebaseReady || !set || !fixturesRef) return;
+            set(fixturesRef, state.fixtures).catch(e => console.error("Failed to save fixtures:", e));
+        }
+
+        // --- Utils & Core Data ---
         function formatName(str) {
             if (!str) return "";
             const parts = String(str).trim().split(/\s+/);
@@ -1294,7 +1591,6 @@
         function getPlayerSelectionKey(player) {
             return (player.mobile || `${formatName(player.name)}-${player.role || 'player'}`).toString();
         }
-        
         function getPlayersByTeam(teamName) {
             return state.allPlayers.filter(player => ((player.team || '').toString().trim() === String(teamName).trim()));
         }
@@ -1322,7 +1618,8 @@
                 if (isUnassignedTeam(teamName)) {
                     state.unassigned.push({ name: formattedName, role: p.role, price: `$${priceVal}`, mobile: p.mobile || '', team: 'Unassigned' });
                 } else if (state.teams[teamName] !== undefined) {
-                    state.teams[teamName].push({ name: formattedName, price: priceVal });
+                    // STORE AS OBJECT TO KEEP BOTH NAME AND SOLD VALUE
+                    state.teams[teamName].push({ name: formattedName, price: priceVal, playerTag: p.playerTag || 'Choice' });
                     state.teamSpent[teamName] += priceVal;
                 }
             });
@@ -1336,11 +1633,30 @@
             syncLoggedInPlayerDashboard();
         }
 
+        async function assignPlayerToTeam(player, teamName, price = null) {
+            if (!isFirebaseReady || !update) return { status: 'error', message: 'Database not ready.' };
+            const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
+            const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
+            await update(pRef, { team: teamName, price: priceVal });
+            return { status: 'success' };
+        }
+
+        async function removePlayerFromTeam(player, mode) {
+            if (!isFirebaseReady || !update || !remove) return { status: 'error', message: 'Database not ready.' };
+            const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
+            if (mode === 'delete') {
+                await remove(pRef);
+            } else {
+                await update(pRef, { team: 'Unassigned', price: 20 });
+            }
+            return { status: 'success' };
+        }
+
         function adminToggleSession() {
             state.auction.isSessionActive = !state.auction.isSessionActive;
             if (!state.auction.isSessionActive) {
-                state.auction.loggedInOwners = []; 
-                state.auction.status = 'waiting'; 
+                state.auction.loggedInOwners = []; // Clear logins when session stops
+                state.auction.status = 'waiting'; // Force UI to waiting state globally
             }
             saveAuctionState();
             renderAdminPanel();
@@ -1352,6 +1668,7 @@
             }
         }
 
+        // Loop for the progress bar - Highly Optimized using requestAnimationFrame (60 FPS)
         let animationFrameId = null;
         function startTimerLoop() {
             if (animationFrameId) cancelAnimationFrame(animationFrameId);
@@ -1367,7 +1684,7 @@
                     
                     if (text) text.innerText = `${seconds}s`;
                     if (bar) {
-                        const percentage = (remaining / 7000) * 100;
+                        const percentage = (remaining / 7000) * 100; // Warning is 7 seconds
                         bar.style.width = `${percentage}%`;
                     }
                 } else {
@@ -1377,6 +1694,8 @@
             }
             animationFrameId = requestAnimationFrame(update);
         }
+
+        // --- 3. Bidding Core Mechanics ---
 
         function adminToggleAuctionStage() {
             if (state.unassigned.length === 0) return showModal("Draft Complete", "No players left in pool!");
@@ -1404,7 +1723,7 @@
         function adminGiveWarning() {
             if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
             state.auction.status = 'warning';
-            state.auction.endTime = Date.now() + 7000; 
+            state.auction.endTime = Date.now() + 7000; // 7 Seconds Warning Timer
             saveAuctionState();
             renderAuctionUI();
         }
@@ -1441,9 +1760,11 @@
 
             const currentCount = state.teams[teamName] ? state.teams[teamName].length : 0;
             const spent = state.teamSpent[teamName] || 0;
+            
             const remainingRequiredSlots = Math.max(0, 15 - currentCount - 1); 
             const reserveFundsNeeded = remainingRequiredSlots * 20; 
             const maxAllowedBid = 1000 - spent - reserveFundsNeeded;
+
             const nextBid = state.auction.highestBidder === null ? 20 : state.auction.currentBid + amount;
             
             if (nextBid > maxAllowedBid) {
@@ -1473,10 +1794,11 @@
                     console.error("Backend assign error:", e);
                 }
             } else {
+                console.log("Player Unsold/Passed");
                 if (state.auction.playerIdx < state.unassigned.length - 1) {
                     state.auction.playerIdx++;
                 } else {
-                    state.auction.playerIdx = 0; 
+                    state.auction.playerIdx = 0; // Wrap to start if they pass the last player
                 }
             }
 
@@ -1485,21 +1807,20 @@
 
             setTimeout(() => {
                 if(state.auction.status === 'sold' && state.userRole === 'admin') {
-                    const stage = document.getElementById('stage-active');
-                    const stamp = document.getElementById('auction-sold-stamp');
-                    if (stage) stage.classList.add('stage-transition-out');
-                    if (stamp) stamp.style.opacity = '0'; 
-                    
-                    setTimeout(() => {
-                        if (stage) stage.classList.remove('stage-transition-out');
-                        if (state.auction.playerIdx >= state.unassigned.length) {
-                            state.auction.playerIdx = Math.max(0, state.unassigned.length - 1);
-                        }
-                        adminToggleAuctionStage();
-                    }, 500); 
+                    state.auction.status = 'waiting';
+                    state.auction.currentBid = 20;
+                    state.auction.highestBidder = null;
+                    state.auction.passedTeams = [];
+                    if (state.auction.playerIdx >= state.unassigned.length) {
+                        state.auction.playerIdx = Math.max(0, state.unassigned.length - 1);
+                    }
+                    saveAuctionState();
+                    renderAuctionUI();
                 }
             }, 4500); 
         }
+
+        // --- 4. Render Logic ---
         
         function renderTeams() {
             const grid = document.getElementById('teams-grid');
@@ -1511,6 +1832,9 @@
 
             Object.keys(state.teams).forEach(team => {
                 const count = state.teams[team].length;
+                const roster = getPlayersByTeam(team);
+                const iconCount = roster.filter(player => (player.playerTag || '').toLowerCase() === 'icon').length;
+                const choiceCount = Math.max(roster.length - iconCount, 0);
                 const details = teamConfig[team] || { owner: 'Unknown', grad: 'from-slate-500 to-slate-700' };
                 const teamImage = teamImages[team];
                 const teamImageClass = teamImageClasses[team] || '';
@@ -1525,6 +1849,10 @@
                                 <span class="text-lg sm:text-xl md:text-2xl font-black italic text-transparent bg-clip-text bg-gradient-to-r ${details.grad} drop-shadow-sm transform -skew-x-6 inline-block">
                                     ${details.owner}
                                 </span>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Icon ${iconCount}</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Choice ${choiceCount}</span>
                             </div>
                             <p class="text-xs font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1.5 rounded-md border border-slate-200">
                                 🏏 ${count} Players Drafted
@@ -1566,6 +1894,7 @@
             }
             lastAuctionStatus = state.auction.status;
             
+            // --- NEW: Bid Announcement Logic ---
             if (state.auction.status === 'active' || state.auction.status === 'warning') {
                 if (state.auction.highestBidder && 
                    (state.auction.currentBid !== lastBidAmount || state.auction.highestBidder !== lastBidder)) {
@@ -1576,9 +1905,11 @@
                     lastBidder = state.auction.highestBidder;
                 }
             } else if (state.auction.status === 'waiting') {
+                // Reset trackers for the next player
                 lastBidAmount = 0;
                 lastBidder = null;
             }
+            // -----------------------------------
 
             if (state.auction.status === 'waiting') {
                 uiWait.classList.remove('hide');
@@ -1591,14 +1922,6 @@
                 const p = state.unassigned[state.auction.playerIdx];
                 if (p) {
                     const nameEl = document.getElementById('auction-player-name');
-                    if (nameEl.innerText !== p.name && nameEl.innerText !== "---") {
-                        uiActive.classList.remove('stage-transition-in');
-                        void uiActive.offsetWidth; 
-                        uiActive.classList.add('stage-transition-in');
-
-                        nameEl.classList.add('glitch-text');
-                        setTimeout(() => nameEl.classList.remove('glitch-text'), 2000);
-                    }
                     nameEl.innerText = p.name;
                     document.getElementById('auction-player-role').innerText = p.role;
                 } else {
@@ -1658,6 +1981,7 @@
 
             const grid = document.getElementById('franchise-tables-grid');
             if(!grid) return;
+            grid.innerHTML = '';
             
             const isOwnerView = state.userRole.startsWith('owner_');
             grid.className = isOwnerView 
@@ -1675,6 +1999,7 @@
                     const hasPassed = state.auction.passedTeams && state.auction.passedTeams.includes(team);
                     const isConnected = state.auction.loggedInOwners && state.auction.loggedInOwners.includes(team);
                     
+                    // If it is an owner view and this table is NOT their team, hide it completely
                     if (isOwnerView && !isMyTeam) return;
 
                     const currentCount = state.teams[team] ? state.teams[team].length : 0;
@@ -1758,9 +2083,8 @@
                     console.error("Error rendering team:", team, e);
                 }
             });
-            
             grid.innerHTML = gridHTML;
-
+            // Handle bottom section (steady layout)
             const teamsBtns = document.getElementById('auction-teams-buttons');
             if (teamsBtns) {
                 teamsBtns.innerHTML = Object.keys(teamConfig).map(team => {
@@ -1771,6 +2095,9 @@
                     </button>`;
                 }).join('');
             }
+
+            const upcomingContainer = document.getElementById('auction-upcoming-players-container');
+            if (upcomingContainer) upcomingContainer.classList.add('hide');
 
             const adminControls = document.getElementById('auction-admin-controls');
             const sellBtn = document.getElementById('btn-admin-sell');
@@ -1807,6 +2134,8 @@
             }
         }
 
+        // --- Admin Panel Functions ---
+        
         function renderAdminPanel() {
             const totalEl = document.getElementById('admin-total-players');
             const totalUnassignedEl = document.getElementById('admin-total-unassigned');
@@ -1879,6 +2208,18 @@
 
             updateUnassignedSelectionUi();
 
+            const fixtureSummary = document.getElementById('admin-fixture-summary');
+            const fixtureFirst = document.getElementById('fixture-first-team');
+            const fixtureSecond = document.getElementById('fixture-second-team');
+            if (fixtureFirst) fixtureFirst.value = state.fixtures?.firstMatch?.team1 || '';
+            if (fixtureSecond) fixtureSecond.value = state.fixtures?.firstMatch?.team2 || '';
+            if (fixtureSummary) {
+                const fixtures = getFixtureSummaryCards();
+                fixtureSummary.innerHTML = fixtures.length
+                    ? `<div class="grid gap-3">${fixtures.map(({ fixture, status, result }) => `<div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><p class="text-[10px] uppercase tracking-widest font-black ${status === 'completed' ? 'text-emerald-600' : status === 'live' ? 'text-blue-600' : 'text-slate-400'}">${fixture.matchLabel}</p><p class="font-black text-slate-900 mt-1">${fixture.team1} vs ${fixture.team2}</p><p class="text-xs text-slate-500 mt-1">${status === 'completed' && result ? result.resultText : status === 'live' ? 'Live now' : 'Pending'}</p></div><span class="px-3 py-1 rounded-full text-[10px] uppercase tracking-widest font-black ${status === 'completed' ? 'bg-emerald-50 text-emerald-700' : status === 'live' ? 'bg-blue-50 text-blue-700' : 'bg-white text-slate-500 border border-slate-200'}">${status}</span></div>`).join('')}</div>`
+                    : '<p class="text-sm text-slate-400">Create Match 1 to lock the full league fixture list.</p>';
+            }
+
             const rosterDiv = document.getElementById('admin-roster-view');
             if (rosterDiv) {
                 if (Object.keys(state.teams).every(team => getPlayersByTeam(team).length === 0)) {
@@ -1907,6 +2248,8 @@
                     }).join('');
                 }
             }
+
+            renderLiveMatchAdminUI();
         }
 
         function adminNextPlayer() {
@@ -2014,6 +2357,31 @@
             document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
 
+        async function adminAddPlayerDirect() {
+            try {
+                if (!isFirebaseReady || !set || !get) throw new Error("Database not ready.");
+                const name = formatName(document.getElementById('admin-add-name')?.value || '');
+                const mobile = (document.getElementById('admin-add-mobile')?.value || '').trim();
+                const pin = (document.getElementById('admin-add-pin')?.value || '').trim();
+                const role = document.getElementById('admin-add-role')?.value || 'Batsman';
+                const team = document.getElementById('admin-add-team')?.value || 'Unassigned';
+                const playerTag = document.getElementById('admin-add-tag')?.value || 'Choice';
+                if (!name || !mobile || !pin || pin.length !== 4) return showModal('Add Player Error', 'Enter name, mobile, and a 4-digit PIN.');
+                const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
+                const snapshot = await get(playerRef);
+                if (snapshot.exists()) return showModal('Add Player Error', 'That mobile number is already registered.');
+                await set(playerRef, { name, mobile, role, pin, team, price: 20, playerTag });
+                ['admin-add-name', 'admin-add-mobile', 'admin-add-pin'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = '';
+                });
+                showModal('Player Added', `${name} was added successfully.`);
+            } catch (error) {
+                showModal('Add Player Error', error.message || 'Unable to add player.');
+            }
+        }
+
+        // --- Live Score & Chart ---
         function applyLiveScoreState() {
             const map = { 'live-team-1': 'team1', 'live-score-1': 'score1', 'live-team-2': 'team2', 'live-score-2': 'score2', 'live-batter-1': 'batter', 'live-bowler': 'bowler', 'ls-team1': 'team1', 'ls-score1': 'score1', 'ls-team2': 'team2', 'ls-score2': 'score2', 'ls-batter1': 'batter', 'ls-bowler': 'bowler' };
             Object.keys(map).forEach(id => {
@@ -2034,36 +2402,1424 @@
             showModal('⚡ Score Updated', "<p class='text-center'>Live feed pushed.</p>");
         }
 
+        function hideLegacyLiveScoreCard() {
+            const legacyAnchor = document.getElementById('ls-team1');
+            const legacyCard = legacyAnchor ? legacyAnchor.closest('.clean-card') : null;
+            if (legacyCard) legacyCard.classList.add('hide');
+        }
+
+        function showMatchSetup() {
+            if (!state.fixtures?.generated && getSavedMatchesByStage('league').length === 0) {
+                showModal('Fixture First', 'Fix the Match 1 fixture first. The remaining league schedule will be created automatically.');
+                return;
+            }
+            state.liveMatch.status = 'setup_wizard';
+            renderLiveMatchAdminUI();
+        }
+
+        function createBatterEntry(name) {
+            return { name, runs: 0, balls: 0, fours: 0, sixes: 0, status: 'batting' };
+        }
+
+        function createBowlerEntry(name) {
+            return { name, overs: 0, balls: 0, runs: 0, wickets: 0 };
+        }
+
+        function ensureLiveCards() {
+            const m = state.liveMatch;
+            m.battingCard = Array.isArray(m.battingCard) ? m.battingCard : [];
+            m.bowlingCard = Array.isArray(m.bowlingCard) ? m.bowlingCard : [];
+        }
+
+        function syncCurrentPlayersToCards() {
+            const m = state.liveMatch;
+            ensureLiveCards();
+
+            const syncBatter = (batter, isStriker) => {
+                if (!batter?.name) return;
+                const idx = m.battingCard.findIndex(item => item.name === batter.name);
+                const existing = idx >= 0 ? m.battingCard[idx] : null;
+                const next = {
+                    name: batter.name,
+                    runs: batter.runs || 0,
+                    balls: batter.balls || 0,
+                    fours: batter.fours || 0,
+                    sixes: batter.sixes || 0,
+                    status: existing?.status === 'out' ? 'out' : (isStriker ? 'batting*' : 'batting')
+                };
+                if (idx >= 0) m.battingCard[idx] = { ...m.battingCard[idx], ...next };
+                else m.battingCard.push(next);
+            };
+
+            syncBatter(m.striker, true);
+            syncBatter(m.nonStriker, false);
+
+            if (m.bowler?.name) {
+                const idx = m.bowlingCard.findIndex(item => item.name === m.bowler.name);
+                const next = {
+                    name: m.bowler.name,
+                    overs: m.bowler.overs || 0,
+                    balls: m.bowler.balls || 0,
+                    runs: m.bowler.runs || 0,
+                    wickets: m.bowler.wickets || 0
+                };
+                if (idx >= 0) m.bowlingCard[idx] = { ...m.bowlingCard[idx], ...next };
+                else m.bowlingCard.push(next);
+            }
+        }
+
+        function markBatterOut(name) {
+            if (!name) return;
+            ensureLiveCards();
+            const idx = state.liveMatch.battingCard.findIndex(item => item.name === name);
+            if (idx >= 0) state.liveMatch.battingCard[idx].status = 'out';
+        }
+
+        function markBattersNotOut() {
+            ensureLiveCards();
+            [state.liveMatch.striker?.name, state.liveMatch.nonStriker?.name].forEach(name => {
+                if (!name) return;
+                const idx = state.liveMatch.battingCard.findIndex(item => item.name === name);
+                if (idx >= 0 && state.liveMatch.battingCard[idx].status !== 'out') {
+                    state.liveMatch.battingCard[idx].status = 'not out';
+                }
+            });
+        }
+
+        function getSavedBowler(name) {
+            ensureLiveCards();
+            return state.liveMatch.bowlingCard.find(item => item.name === name);
+        }
+
+        function formatOversValue(overs, balls) {
+            return `${overs || 0}.${balls || 0}`;
+        }
+
+        function getActiveTeamNames() {
+            return Object.keys(state.teams || {});
+        }
+
+        function getStageDisplayName(stage) {
+            if (stage === 'semi') return 'Semi Final';
+            if (stage === 'final') return 'Final';
+            return 'League Match';
+        }
+
+        function getSavedMatchesByStage(stage) {
+            return (state.matches || []).filter(match => (match.stage || 'league') === stage);
+        }
+
+        function getSavedMatchByFixtureId(fixtureId) {
+            if (!fixtureId) return null;
+            return (state.matches || []).find(match => match.fixtureId === fixtureId) || null;
+        }
+
+        function getLeagueMatchTarget() {
+            const teams = getActiveTeamNames().length;
+            return teams > 1 ? (teams * (teams - 1)) / 2 : 0;
+        }
+
+        function createRoundRobinFixtures(firstTeam, secondTeam) {
+            const teams = getActiveTeamNames();
+            if (!firstTeam || !secondTeam || firstTeam === secondTeam) return [];
+            const remainingTeams = teams.filter(team => team !== firstTeam && team !== secondTeam).sort((a, b) => a.localeCompare(b));
+            const orderedTeams = [firstTeam, secondTeam, ...remainingTeams];
+            const pairings = [];
+            for (let i = 0; i < orderedTeams.length; i++) {
+                for (let j = i + 1; j < orderedTeams.length; j++) {
+                    pairings.push({ team1: orderedTeams[i], team2: orderedTeams[j] });
+                }
+            }
+            const firstPairKey = [firstTeam, secondTeam].sort().join('__');
+            pairings.sort((a, b) => {
+                const aKey = [a.team1, a.team2].sort().join('__');
+                const bKey = [b.team1, b.team2].sort().join('__');
+                if (aKey === firstPairKey) return -1;
+                if (bKey === firstPairKey) return 1;
+                return aKey.localeCompare(bKey);
+            });
+            return pairings.map((fixture, index) => ({
+                id: `league_${index + 1}`,
+                stage: 'league',
+                matchNumber: index + 1,
+                matchLabel: `League Match ${index + 1}`,
+                team1: fixture.team1,
+                team2: fixture.team2
+            }));
+        }
+
+        function getFixtureStatus(fixture) {
+            const savedMatch = getSavedMatchByFixtureId(fixture.id);
+            if (savedMatch) return { code: 'completed', savedMatch };
+            if (state.liveMatch?.fixtureId === fixture.id && state.liveMatch?.status !== 'setup' && state.liveMatch?.status !== 'setup_wizard') {
+                return { code: state.liveMatch.status === 'finished' ? 'completed' : 'live', savedMatch: null };
+            }
+            return { code: 'pending', savedMatch: null };
+        }
+
+        function getNextPendingLeagueFixture() {
+            const list = state.fixtures?.leagueMatches || [];
+            return list.find(fixture => getFixtureStatus(fixture).code === 'pending') || null;
+        }
+
+        function getRosterOptionsForTeam(teamName, roleHint = 'all') {
+            const roster = getPlayersByTeam(teamName).slice().sort((a, b) => formatName(a.name).localeCompare(formatName(b.name)));
+            if (roleHint === 'bowler') {
+                return roster.filter(player => ['Bowler', 'All-Rounder'].includes(player.role));
+            }
+            if (roleHint === 'batter') {
+                return roster.filter(player => ['Batsman', 'All-Rounder', 'Keeper', 'Wicket-Keeper'].includes(player.role));
+            }
+            return roster;
+        }
+
+        function buildPlayerOptions(teamName, roleHint = 'all', includePlaceholder = true) {
+            const players = getRosterOptionsForTeam(teamName, roleHint);
+            const placeholder = includePlaceholder ? '<option value="">Select player</option>' : '';
+            return placeholder + players.map(player => `<option value="${escapeHtml(formatName(player.name))}">${escapeHtml(formatName(player.name))} (${escapeHtml(player.role || 'Player')})</option>`).join('');
+        }
+
+        function getFixtureSummaryCards() {
+            const fixtures = (state.fixtures?.leagueMatches || []).map(fixture => {
+                const status = getFixtureStatus(fixture);
+                const result = status.savedMatch ? (status.savedMatch.result || getMatchResultPayload(status.savedMatch)) : null;
+                return { fixture, status: status.code, savedMatch: status.savedMatch, result };
+            });
+            return fixtures;
+        }
+
+        function getSemiFinalFixture(points, index) {
+            if (points.length < 4) return null;
+            if (index === 0) return { team1: points[0].team, team2: points[3].team };
+            if (index === 1) return { team1: points[1].team, team2: points[2].team };
+            return null;
+        }
+
+        function generateFixturesFromAdmin() {
+            const firstTeam = document.getElementById('fixture-first-team')?.value;
+            const secondTeam = document.getElementById('fixture-second-team')?.value;
+            if (!firstTeam || !secondTeam || firstTeam === secondTeam) {
+                return showModal('Fixture Error', 'Choose two different teams for the opening fixture.');
+            }
+            const leagueMatches = createRoundRobinFixtures(firstTeam, secondTeam);
+            state.fixtures = {
+                generated: leagueMatches.length > 0,
+                generatedAt: Date.now(),
+                firstMatch: { team1: firstTeam, team2: secondTeam },
+                leagueMatches
+            };
+            saveFixturesState();
+            renderPublicLiveUI();
+            renderStatsDashboard();
+            renderAdminPanel();
+            showModal('Fixtures Ready', `${firstTeam} vs ${secondTeam} is locked as Match 1. The remaining league fixtures were created automatically.`);
+        }
+
+        function resetFixtures() {
+            if (!confirm('Delete the generated league fixture list?')) return;
+            state.fixtures = {
+                generated: false,
+                generatedAt: 0,
+                firstMatch: { team1: '', team2: '' },
+                leagueMatches: []
+            };
+            saveFixturesState();
+            renderPublicLiveUI();
+            renderStatsDashboard();
+            renderAdminPanel();
+        }
+
+        function setLiveTab(tab) {
+            state.liveTab = tab;
+            renderPublicLiveUI();
+        }
+
+        function updateMatchSetupRosterOptions() {
+            const team1 = document.getElementById('setup-team1')?.value.trim();
+            const team2 = document.getElementById('setup-team2')?.value.trim();
+            const toss = document.getElementById('setup-toss');
+            const decision = document.getElementById('setup-decision');
+            const striker = document.getElementById('setup-striker');
+            const nonStriker = document.getElementById('setup-nonstriker');
+            const bowler = document.getElementById('setup-bowler');
+            if (!team1 || !team2 || !toss || !decision || !striker || !nonStriker || !bowler) return;
+            const currentToss = toss.value;
+            toss.innerHTML = `<option value="">Select team</option><option value="${team1}">${team1}</option><option value="${team2}">${team2}</option>`;
+            toss.value = currentToss;
+            const selectedToss = toss.value || team1;
+            const battingTeam = ((selectedToss === team1 && decision.value === 'Bat') || (selectedToss === team2 && decision.value === 'Bowl')) ? team1 : team2;
+            const bowlingTeam = battingTeam === team1 ? team2 : team1;
+            striker.innerHTML = buildPlayerOptions(battingTeam, 'batter');
+            nonStriker.innerHTML = buildPlayerOptions(battingTeam, 'batter');
+            bowler.innerHTML = buildPlayerOptions(bowlingTeam, 'bowler');
+        }
+
+        function getNextTournamentMatchPlan() {
+            const leagueMatches = getSavedMatchesByStage('league');
+            const semiMatches = getSavedMatchesByStage('semi');
+            const finalMatches = getSavedMatchesByStage('final');
+            const leagueTarget = getLeagueMatchTarget();
+            const points = buildPointsTable(leagueMatches);
+            const pendingLeagueFixture = getNextPendingLeagueFixture();
+
+            if (state.fixtures?.generated && pendingLeagueFixture) {
+                return {
+                    stage: 'league',
+                    matchNumber: pendingLeagueFixture.matchNumber,
+                    matchLabel: pendingLeagueFixture.matchLabel,
+                    fixture: pendingLeagueFixture,
+                    fixtureId: pendingLeagueFixture.id
+                };
+            }
+
+            if (leagueMatches.length < leagueTarget) {
+                const matchNumber = leagueMatches.length + 1;
+                return {
+                    stage: 'league',
+                    matchNumber,
+                    matchLabel: `League Match ${matchNumber}`
+                };
+            }
+
+            if (points.length >= 4 && semiMatches.length < 2) {
+                const matchNumber = semiMatches.length + 1;
+                const fixture = getSemiFinalFixture(points, semiMatches.length);
+                return {
+                    stage: 'semi',
+                    matchNumber,
+                    matchLabel: `Semi Final ${matchNumber}`,
+                    fixture
+                };
+            }
+
+            if (points.length >= 2 && finalMatches.length < 1) {
+                let finalists = [];
+                if (semiMatches.length >= 2) {
+                    finalists = semiMatches.map(match => (match.result || {}).winner).filter(Boolean);
+                } else {
+                    finalists = points.slice(0, 2).map(row => row.team);
+                }
+                if (finalists.length >= 2) {
+                    return {
+                        stage: 'final',
+                        matchNumber: 1,
+                        matchLabel: 'Grand Final',
+                        fixture: { team1: finalists[0], team2: finalists[1] }
+                    };
+                }
+            }
+
+            return {
+                stage: 'complete',
+                matchNumber: 0,
+                matchLabel: 'Tournament Complete'
+            };
+        }
+
+        function adminStartMatch() {
+            const nextPlan = getNextTournamentMatchPlan();
+            const t1 = document.getElementById('setup-team1')?.value.trim();
+            const t2 = document.getElementById('setup-team2')?.value.trim();
+            const toss = document.getElementById('setup-toss')?.value.trim();
+            const dec = document.getElementById('setup-decision')?.value;
+            const oversLimit = Math.max(1, Number(document.getElementById('setup-overs')?.value || 6));
+            const s1 = document.getElementById('setup-striker')?.value.trim();
+            const s2 = document.getElementById('setup-nonstriker')?.value.trim();
+            const bw = document.getElementById('setup-bowler')?.value.trim();
+            if (!t1 || !t2 || !toss || !s1 || !s2 || !bw) return showModal('Setup Error', 'Please provide all match details to begin.');
+            if (s1 === s2) return showModal('Setup Error', 'Opening batters must be different players.');
+
+            const battingTeam = ((toss === t1 && dec === 'Bat') || (toss === t2 && dec === 'Bowl')) ? t1 : t2;
+            const bowlingTeam = battingTeam === t1 ? t2 : t1;
+
+            state.liveMatch = {
+                status: 'active',
+                matchId: `match_${Date.now()}`,
+                fixtureId: nextPlan.fixtureId || nextPlan.fixture?.id || '',
+                stage: nextPlan.stage || 'league',
+                matchNumber: nextPlan.matchNumber || 1,
+                matchLabel: nextPlan.matchLabel || `League Match ${(getSavedMatchesByStage('league').length || 0) + 1}`,
+                archived: false,
+                playerOfTheMatch: null,
+                innings: 1,
+                team1: t1,
+                team2: t2,
+                tossWinner: toss,
+                tossDecision: dec,
+                battingTeam,
+                bowlingTeam,
+                score: 0,
+                wickets: 0,
+                overs: 0,
+                balls: 0,
+                target: 0,
+                oversLimit,
+                innings1Summary: null,
+                innings2Summary: null,
+                striker: { name: s1, runs: 0, balls: 0, fours: 0, sixes: 0 },
+                nonStriker: { name: s2, runs: 0, balls: 0, fours: 0, sixes: 0 },
+                bowler: { name: bw, overs: 0, balls: 0, runs: 0, wickets: 0 },
+                battingCard: [createBatterEntry(s1), createBatterEntry(s2)],
+                bowlingCard: [createBowlerEntry(bw)],
+                recentBalls: [],
+                needNewBatter: false,
+                needNewBowler: false
+            };
+            syncCurrentPlayersToCards();
+            saveLiveMatchState();
+        }
+
+        function scoreBall(runs, extra = 'none', isWicket = false) {
+            const m = state.liveMatch;
+            if (m.status !== 'active' || m.needNewBatter || m.needNewBowler) return;
+            ensureLiveCards();
+            let teamRuns = runs;
+            let batterRuns = runs;
+            let legalBall = true;
+            let ballStr = runs.toString();
+
+            if (extra === 'Wd') {
+                teamRuns += 1;
+                batterRuns = 0;
+                legalBall = false;
+                ballStr = runs > 0 ? `${runs}Wd` : 'Wd';
+            } else if (extra === 'Nb') {
+                teamRuns += 1;
+                legalBall = false;
+                ballStr = runs > 0 ? `${runs}Nb` : 'Nb';
+            } else if (extra === 'Lb' || extra === 'B') {
+                batterRuns = 0;
+                ballStr = runs > 0 ? `${runs}${extra}` : extra;
+            } else if (isWicket) {
+                ballStr = 'W';
+            }
+
+            m.score += teamRuns;
+
+            if (isWicket) {
+                m.wickets += 1;
+                m.bowler.wickets += 1;
+                m.striker.balls += 1;
+                markBatterOut(m.striker.name);
+                if (m.wickets >= 10) handleInningsEnd();
+                else m.needNewBatter = true;
+            } else {
+                m.striker.runs += batterRuns;
+                m.striker.balls += (legalBall || extra === 'Nb') ? 1 : 0;
+                if (batterRuns === 4) m.striker.fours += 1;
+                if (batterRuns === 6) m.striker.sixes += 1;
+            }
+
+            m.bowler.runs += (extra === 'Lb' || extra === 'B') ? 0 : teamRuns;
+            if (legalBall) {
+                m.balls += 1;
+                m.bowler.balls += 1;
+            }
+
+            m.recentBalls = m.recentBalls || [];
+            m.recentBalls.push(ballStr);
+            if (m.recentBalls.length > 12) m.recentBalls.shift();
+
+            if (!isWicket) {
+                const oddRuns = (runs % 2 !== 0) && extra !== 'Wd';
+                const overEnd = m.balls === 6;
+                if (oddRuns !== overEnd) {
+                    const temp = m.striker;
+                    m.striker = m.nonStriker;
+                    m.nonStriker = temp;
+                }
+            }
+
+            if (m.balls === 6) {
+                m.overs += 1;
+                m.balls = 0;
+                m.bowler.overs += 1;
+                m.bowler.balls = 0;
+                if (m.overs >= (m.oversLimit || 6)) handleInningsEnd();
+                else m.needNewBowler = true;
+            }
+
+            if (m.innings === 2 && m.score >= m.target) {
+                markBattersNotOut();
+                m.innings2Summary = summarizeCurrentInnings();
+                m.status = 'finished';
+                showModal('Result', `${m.battingTeam} wins!`);
+                archiveFinishedMatch().catch(e => console.error('Archive failed:', e));
+            }
+            syncCurrentPlayersToCards();
+            saveLiveMatchState();
+        }
+
+        function handleInningsEnd() {
+            const m = state.liveMatch;
+            markBattersNotOut();
+            if (m.innings === 1) {
+                m.innings1Summary = summarizeCurrentInnings();
+                m.target = m.score + 1;
+                m.innings = 2;
+                m.score = 0;
+                m.wickets = 0;
+                m.overs = 0;
+                m.balls = 0;
+                m.recentBalls = [];
+                const tempTeam = m.battingTeam;
+                m.battingTeam = m.bowlingTeam;
+                m.bowlingTeam = tempTeam;
+                m.striker = { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 };
+                m.nonStriker = { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 };
+                m.bowler = { name: '', overs: 0, balls: 0, runs: 0, wickets: 0 };
+                m.battingCard = [];
+                m.bowlingCard = [];
+                m.needNewBatter = true;
+                m.needNewBowler = true;
+                showModal('Innings Break', `Target set: ${m.target}. ${m.battingTeam} to bat.`);
+            } else {
+                m.innings2Summary = summarizeCurrentInnings();
+                m.status = 'finished';
+                archiveFinishedMatch().catch(e => console.error('Archive failed:', e));
+            }
+        }
+
+        function resolveNewBatter() {
+            const selectedVal = document.getElementById('select-new-batter')?.value.trim();
+            const typedVal = document.getElementById('input-new-batter')?.value.trim();
+            const val = selectedVal || typedVal;
+            if (!val) return;
+            if (!state.liveMatch.striker?.name) {
+                state.liveMatch.striker = { name: val, runs: 0, balls: 0, fours: 0, sixes: 0 };
+            } else if (!state.liveMatch.nonStriker?.name) {
+                state.liveMatch.nonStriker = { name: val, runs: 0, balls: 0, fours: 0, sixes: 0 };
+            } else {
+                state.liveMatch.striker = { name: val, runs: 0, balls: 0, fours: 0, sixes: 0 };
+            }
+            state.liveMatch.needNewBatter = !state.liveMatch.striker?.name || !state.liveMatch.nonStriker?.name;
+            ensureLiveCards();
+            if (!state.liveMatch.battingCard.some(item => item.name === val)) {
+                state.liveMatch.battingCard.push(createBatterEntry(val));
+            }
+            syncCurrentPlayersToCards();
+            saveLiveMatchState();
+        }
+
+        function resolveNewBowler() {
+            const rosterVal = document.getElementById('select-new-bowler')?.value.trim();
+            const selectVal = document.getElementById('select-prev-bowler')?.value.trim();
+            const typedVal = document.getElementById('input-new-bowler')?.value.trim();
+            const val = rosterVal || typedVal || selectVal;
+            if (!val) return;
+            const existingBowler = getSavedBowler(val);
+            state.liveMatch.bowler = existingBowler
+                ? { ...existingBowler }
+                : { name: val, overs: 0, balls: 0, runs: 0, wickets: 0 };
+            state.liveMatch.needNewBowler = false;
+            syncCurrentPlayersToCards();
+            saveLiveMatchState();
+        }
+
+        function adminApplyScoreCorrection() {
+            const m = state.liveMatch;
+            if (!m || m.status === 'setup' || m.status === 'setup_wizard') return;
+            m.score = Math.max(0, Number(document.getElementById('fix-score')?.value || m.score || 0));
+            m.wickets = Math.max(0, Number(document.getElementById('fix-wickets')?.value || m.wickets || 0));
+            m.overs = Math.max(0, Number(document.getElementById('fix-overs')?.value || m.overs || 0));
+            m.balls = Math.min(5, Math.max(0, Number(document.getElementById('fix-balls')?.value || m.balls || 0)));
+            if (document.getElementById('fix-striker')?.value.trim()) m.striker.name = document.getElementById('fix-striker').value.trim();
+            if (document.getElementById('fix-nonstriker')?.value.trim()) m.nonStriker.name = document.getElementById('fix-nonstriker').value.trim();
+            if (document.getElementById('fix-bowler')?.value.trim()) m.bowler.name = document.getElementById('fix-bowler').value.trim();
+            syncCurrentPlayersToCards();
+            saveLiveMatchState();
+            renderLiveMatchAdminUI();
+            renderPublicLiveUI();
+            showModal('Live Score Updated', 'Admin correction was applied to the current live score.');
+        }
+
+        function adminResetMatch() {
+            if (!confirm('Destroy current live match data?')) return;
+            state.liveMatch = {
+                ...state.liveMatch,
+                status: 'setup',
+                matchId: '',
+                fixtureId: '',
+                stage: 'league',
+                matchNumber: 0,
+                matchLabel: '',
+                archived: false,
+                playerOfTheMatch: null,
+                team1: '',
+                team2: '',
+                tossWinner: '',
+                tossDecision: '',
+                battingTeam: '',
+                bowlingTeam: '',
+                score: 0,
+                wickets: 0,
+                overs: 0,
+                balls: 0,
+                target: 0,
+                oversLimit: 6,
+                innings: 1,
+                innings1Summary: null,
+                innings2Summary: null,
+                striker: { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                nonStriker: { name: '', runs: 0, balls: 0, fours: 0, sixes: 0 },
+                bowler: { name: '', overs: 0, balls: 0, runs: 0, wickets: 0 },
+                battingCard: [],
+                bowlingCard: [],
+                recentBalls: [],
+                needNewBatter: false,
+                needNewBowler: false
+            };
+            saveLiveMatchState();
+        }
+
+        function getBallColor(ball) {
+            if (ball === 'W') return 'ball-W';
+            if (ball.includes('Wd') || ball.includes('Nb') || ball.includes('Lb') || ball.includes('B')) return 'ball-ex';
+            if (ball.includes('4')) return 'ball-4';
+            if (ball.includes('6')) return 'ball-6';
+            if (ball === '0') return 'ball-0';
+            return 'ball-1';
+        }
+
+        function downloadMatchPdf(matchId) {
+            const match = (state.matches || []).find(item => item.id === matchId || item.matchId === matchId) || (state.liveMatch?.matchId === matchId ? state.liveMatch : null);
+            if (!match || !window.jspdf?.jsPDF) return showModal('PDF Error', 'PDF generator is not ready yet.');
+            const doc = new window.jspdf.jsPDF();
+            const result = match.result || getMatchResultPayload(match);
+            const lines = [
+                'DPL Match Report',
+                `${match.matchLabel || 'Match'}`,
+                `${match.team1} vs ${match.team2}`,
+                result.resultText,
+                '',
+                `1st Innings: ${match.innings1Summary?.battingTeam || '-'} ${match.innings1Summary?.score || 0}/${match.innings1Summary?.wickets || 0} (${formatOversValue(match.innings1Summary?.overs, match.innings1Summary?.balls)} ov)`,
+                `2nd Innings: ${match.innings2Summary?.battingTeam || '-'} ${match.innings2Summary?.score || 0}/${match.innings2Summary?.wickets || 0} (${formatOversValue(match.innings2Summary?.overs, match.innings2Summary?.balls)} ov)`,
+                '',
+                `Player of the Match: ${match.playerOfTheMatch ? `${match.playerOfTheMatch.name} (${match.playerOfTheMatch.team})` : 'TBD'}`
+            ];
+            let y = 20;
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(18);
+            doc.text('DPL Scorecard', 14, y);
+            y += 12;
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(11);
+            lines.forEach(line => {
+                doc.text(String(line), 14, y);
+                y += 8;
+            });
+            const addInningsBlock = (title, innings) => {
+                if (!innings) return;
+                y += 4;
+                doc.setFont('helvetica', 'bold');
+                doc.text(title, 14, y);
+                y += 8;
+                doc.setFont('helvetica', 'normal');
+                (innings.battingCard || []).forEach(batter => {
+                    doc.text(`${batter.name} - ${batter.runs || 0} (${batter.balls || 0})`, 16, y);
+                    y += 7;
+                    if (y > 270) {
+                        doc.addPage();
+                        y = 20;
+                    }
+                });
+            };
+            addInningsBlock('Batting Card: 1st Innings', match.innings1Summary);
+            addInningsBlock('Batting Card: 2nd Innings', match.innings2Summary);
+            doc.save(`${(match.matchLabel || 'match').replace(/\s+/g, '_').toLowerCase()}.pdf`);
+        }
+
+        function renderFixtureListHtml() {
+            const fixtures = getFixtureSummaryCards();
+            if (!fixtures.length) {
+                return '<div class="clean-card p-8 text-center text-slate-400 font-semibold">Admin has not fixed the league schedule yet.</div>';
+            }
+            return `<div class="grid gap-4">${fixtures.map(({ fixture, status, savedMatch, result }) => `
+                <div class="clean-card p-5 border ${status === 'live' ? 'border-emerald-300' : status === 'completed' ? 'border-slate-200' : 'border-slate-100'}">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                        <div>
+                            <p class="text-[11px] uppercase tracking-widest ${status === 'live' ? 'text-emerald-600' : status === 'completed' ? 'text-blue-600' : 'text-slate-400'} font-black">${fixture.matchLabel}</p>
+                            <h3 class="text-xl font-black text-slate-900 mt-1">${fixture.team1} vs ${fixture.team2}</h3>
+                            <p class="text-sm text-slate-500 mt-2">${status === 'completed' && result ? result.resultText : status === 'live' ? 'Live now' : 'Upcoming fixture'}</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${status === 'live' ? 'bg-emerald-50 text-emerald-700' : status === 'completed' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'}">${status}</span>
+                            ${savedMatch ? `<button onclick="downloadMatchPdf('${savedMatch.id || savedMatch.matchId}')" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest">PDF</button>` : ''}
+                        </div>
+                    </div>
+                    ${savedMatch ? `<div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm"><div class="rounded-xl bg-slate-50 border border-slate-100 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">${savedMatch.innings1Summary?.battingTeam}</p><p class="font-black text-slate-900">${savedMatch.innings1Summary?.score}/${savedMatch.innings1Summary?.wickets} (${formatOversValue(savedMatch.innings1Summary?.overs, savedMatch.innings1Summary?.balls)})</p></div><div class="rounded-xl bg-slate-50 border border-slate-100 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">${savedMatch.innings2Summary?.battingTeam}</p><p class="font-black text-slate-900">${savedMatch.innings2Summary?.score}/${savedMatch.innings2Summary?.wickets} (${formatOversValue(savedMatch.innings2Summary?.overs, savedMatch.innings2Summary?.balls)})</p></div></div>` : ''}
+                </div>
+            `).join('')}</div>`;
+        }
+
+        function renderScorecardsHtml() {
+            if (!state.matches.length) {
+                return '<div class="clean-card p-8 text-center text-slate-400 font-semibold">Completed scorecards will appear here after the first match is saved.</div>';
+            }
+            return `<div class="grid gap-4">${state.matches.map(match => {
+                const result = match.result || getMatchResultPayload(match);
+                return `
+                    <div class="clean-card p-5">
+                        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                            <div>
+                                <p class="text-[11px] uppercase tracking-widest text-cyan-600 font-black">${match.matchLabel || 'Match'}</p>
+                                <h3 class="text-xl font-black text-slate-900 mt-1">${match.team1} vs ${match.team2}</h3>
+                                <p class="text-sm text-slate-500 mt-2">${result.resultText}</p>
+                            </div>
+                            <button onclick="downloadMatchPdf('${match.id || match.matchId}')" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest">Download PDF</button>
+                        </div>
+                        <div class="grid lg:grid-cols-2 gap-4 mt-4">
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                                <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Inning 1</p>
+                                <p class="font-black text-slate-900">${match.innings1Summary?.battingTeam}: ${match.innings1Summary?.score}/${match.innings1Summary?.wickets} (${formatOversValue(match.innings1Summary?.overs, match.innings1Summary?.balls)})</p>
+                                <div class="mt-3 space-y-2 text-sm">${(match.innings1Summary?.battingCard || []).map(player => `<div class="flex items-center justify-between gap-3"><span class="truncate text-slate-700">${player.name}</span><span class="font-black text-slate-900">${player.runs || 0} (${player.balls || 0})</span></div>`).join('') || '<p class="text-slate-400">No card available.</p>'}</div>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                                <p class="text-xs uppercase tracking-widest text-slate-400 mb-2">Inning 2</p>
+                                <p class="font-black text-slate-900">${match.innings2Summary?.battingTeam}: ${match.innings2Summary?.score}/${match.innings2Summary?.wickets} (${formatOversValue(match.innings2Summary?.overs, match.innings2Summary?.balls)})</p>
+                                <div class="mt-3 space-y-2 text-sm">${(match.innings2Summary?.battingCard || []).map(player => `<div class="flex items-center justify-between gap-3"><span class="truncate text-slate-700">${player.name}</span><span class="font-black text-slate-900">${player.runs || 0} (${player.balls || 0})</span></div>`).join('') || '<p class="text-slate-400">No card available.</p>'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('')}</div>`;
+        }
+
+        function renderLiveGuideHtml() {
+            return `
+                <div class="clean-card p-6 md:p-8">
+                    <div class="max-w-4xl">
+                        <p class="text-[11px] uppercase tracking-widest text-cyan-600 font-black mb-3">Live Score Guide</p>
+                        <h2 class="text-2xl md:text-3xl font-black text-slate-900">How to use the live score screen</h2>
+                        <div class="grid md:grid-cols-2 gap-4 mt-6">
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">1. Watch current match</h3>
+                                <p class="text-sm text-slate-600">The top live box shows the active match score, striker, non-striker, and current bowler on both mobile and laptop.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">2. See completed matches</h3>
+                                <p class="text-sm text-slate-600">After a match finishes, the winner message appears and that match is saved below as its own box like Match 1, Match 2, and so on.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">3. Check innings cards</h3>
+                                <p class="text-sm text-slate-600">Each saved match keeps both innings summary so users can understand what happened even after the live feed ends.</p>
+                            </div>
+                            <div class="rounded-2xl bg-slate-50 border border-slate-100 p-5">
+                                <h3 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">4. Download reports</h3>
+                                <p class="text-sm text-slate-600">Completed matches can be downloaded as PDF from the match history and scorecard sections.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderPointsTableHtml() {
+            const points = buildPointsTable(getSavedMatchesByStage('league'));
+            if (!points.length) {
+                return '<div class="clean-card p-8 text-center text-slate-400 font-semibold">Points table will appear after league matches are completed.</div>';
+            }
+            return `
+                <div class="clean-card p-5 md:p-6">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p class="text-[11px] uppercase tracking-widest text-cyan-600 font-black mb-1">League Table</p>
+                            <h3 class="text-2xl font-black text-slate-900">Points Table</h3>
+                        </div>
+                        <span class="text-xs uppercase tracking-widest text-slate-400 font-black">Win = 2 pts</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm min-w-[640px]">
+                            <thead>
+                                <tr class="text-left text-xs uppercase tracking-widest text-slate-400 border-b border-slate-100">
+                                    <th class="py-2 pr-4">Team</th>
+                                    <th class="py-2 pr-4">M</th>
+                                    <th class="py-2 pr-4">W</th>
+                                    <th class="py-2 pr-4">L</th>
+                                    <th class="py-2 pr-4">Pts</th>
+                                    <th class="py-2">NRR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${points.map(row => `
+                                    <tr class="border-b border-slate-50">
+                                        <td class="py-3 pr-4 font-black text-slate-900">${row.team}</td>
+                                        <td class="py-3 pr-4">${row.matches}</td>
+                                        <td class="py-3 pr-4 text-emerald-600 font-bold">${row.wins}</td>
+                                        <td class="py-3 pr-4 text-red-500 font-bold">${row.losses}</td>
+                                        <td class="py-3 pr-4 text-blue-600 font-black">${row.points}</td>
+                                        <td class="py-3 font-semibold ${row.nrr >= 0 ? 'text-emerald-600' : 'text-red-500'}">${row.nrr.toFixed(3)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-4">NRR is calculated from total runs scored per over minus total runs conceded per over.</p>
+                </div>
+            `;
+        }
+
+        function showInningsModal(matchId, inningsNumber) {
+            const match = (state.matches || []).find(item => item.id === matchId || item.matchId === matchId) || (state.liveMatch?.matchId === matchId ? state.liveMatch : null);
+            if (!match) return;
+            const innings = inningsNumber === 1 ? match.innings1Summary : match.innings2Summary;
+            if (!innings) return showModal('Innings Pending', 'This innings scorecard is not available yet.');
+            const battingRows = (innings.battingCard || []).map(player => `<div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-b-0"><span class="font-semibold text-slate-800">${player.name}</span><span class="font-black text-slate-900">${player.runs || 0} (${player.balls || 0})</span></div>`).join('');
+            const bowlingRows = (innings.bowlingCard || []).map(player => `<div class="flex items-center justify-between gap-3 py-2 border-b border-slate-100 last:border-b-0"><span class="font-semibold text-slate-800">${player.name}</span><span class="font-black text-slate-900">${formatOversValue(player.overs, player.balls)} | ${player.wickets || 0}-${player.runs || 0}</span></div>`).join('');
+            showModal(`${match.matchLabel || 'Match'} | Inning ${inningsNumber}`, `
+                <div class="space-y-4">
+                    <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                        <p class="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Inning ${inningsNumber}</p>
+                        <p class="font-black text-slate-900 text-lg">${innings.battingTeam} ${innings.score}/${innings.wickets}</p>
+                        <p class="text-sm text-slate-500 mt-1">Overs: ${formatOversValue(innings.overs, innings.balls)} / ${innings.oversLimit || match.oversLimit || 6}</p>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">Batters</h4>
+                        <div class="rounded-2xl bg-white border border-slate-100 p-4">${battingRows || '<p class="text-sm text-slate-400">No batting data.</p>'}</div>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-black uppercase tracking-widest text-slate-700 mb-2">Bowlers</h4>
+                        <div class="rounded-2xl bg-white border border-slate-100 p-4">${bowlingRows || '<p class="text-sm text-slate-400">No bowling data.</p>'}</div>
+                    </div>
+                </div>
+            `);
+        }
+
+        function renderMatchTimelineHtml() {
+            const orderedMatches = (state.matches || []).slice().sort((a, b) => {
+                if ((a.matchNumber || 0) !== (b.matchNumber || 0)) return (a.matchNumber || 0) - (b.matchNumber || 0);
+                return (a.savedAt || 0) - (b.savedAt || 0);
+            });
+            if (!orderedMatches.length) {
+                return '<div class="clean-card p-8 text-center text-slate-400 font-semibold">Completed matches will be stacked here as Match 1, Match 2, Match 3...</div>';
+            }
+            return `
+                <div class="space-y-4 mt-6">
+                    <div class="flex items-center justify-between gap-3">
+                        <h3 class="text-lg font-black text-slate-900">Past Matches</h3>
+                        <span class="text-xs uppercase tracking-widest text-slate-400 font-black">Live + Past Flow</span>
+                    </div>
+                    ${orderedMatches.map(match => {
+                        const result = match.result || getMatchResultPayload(match);
+                        return `
+                            <div class="clean-card p-5 border-slate-200">
+                                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                    <div>
+                                        <p class="text-[11px] uppercase tracking-widest text-cyan-600 font-black">${match.matchLabel || `Match ${match.matchNumber || ''}`}</p>
+                                        <h4 class="text-xl font-black text-slate-900 mt-1">${match.team1} vs ${match.team2}</h4>
+                                        <p class="text-sm text-emerald-600 font-bold mt-2">Congratulations ${result.winner || 'Winner'}!</p>
+                                        <p class="text-sm text-slate-500 mt-1">${result.resultText}</p>
+                                    </div>
+                                    <button onclick="downloadMatchPdf('${match.id || match.matchId}')" class="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-black uppercase tracking-widest">PDF</button>
+                                </div>
+                                <div class="grid md:grid-cols-2 gap-3 mt-4">
+                                    <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                                        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Inning 1</p>
+                                        <p class="font-black text-slate-900">${match.innings1Summary?.battingTeam}: ${match.innings1Summary?.score}/${match.innings1Summary?.wickets} (${formatOversValue(match.innings1Summary?.overs, match.innings1Summary?.balls)})</p>
+                                        <button onclick="showInningsModal('${match.id || match.matchId}', 1)" class="mt-3 px-3 py-2 rounded-xl bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700">View Inning 1</button>
+                                    </div>
+                                    <div class="rounded-2xl bg-slate-50 border border-slate-100 p-4">
+                                        <p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Inning 2</p>
+                                        <p class="font-black text-slate-900">${match.innings2Summary?.battingTeam}: ${match.innings2Summary?.score}/${match.innings2Summary?.wickets} (${formatOversValue(match.innings2Summary?.overs, match.innings2Summary?.balls)})</p>
+                                        <button onclick="showInningsModal('${match.id || match.matchId}', 2)" class="mt-3 px-3 py-2 rounded-xl bg-white border border-slate-200 text-[10px] font-black uppercase tracking-widest text-slate-700">View Inning 2</button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        function renderPublicLiveUI() {
+            const container = document.getElementById('public-match-container');
+            if (!container) return;
+            const m = state.liveMatch;
+            const showLiveCard = !!m && m.status !== 'setup' && m.status !== 'setup_wizard';
+            const tabButtons = `
+                <div class="flex flex-wrap gap-2 mb-6">
+                    <button onclick="setLiveTab('guide')" class="tab-btn ${state.liveTab === 'guide' ? 'active' : ''}"><span>Guide</span></button>
+                    <button onclick="setLiveTab('live')" class="tab-btn ${state.liveTab === 'live' ? 'active' : ''}"><span>Live</span></button>
+                    <button onclick="setLiveTab('points')" class="tab-btn ${state.liveTab === 'points' ? 'active' : ''}"><span>Points</span></button>
+                    <button onclick="setLiveTab('fixtures')" class="tab-btn ${state.liveTab === 'fixtures' ? 'active' : ''}"><span>Fixtures</span></button>
+                    <button onclick="setLiveTab('scorecards')" class="tab-btn ${state.liveTab === 'scorecards' ? 'active' : ''}"><span>Scorecards</span></button>
+                </div>
+            `;
+            if (!showLiveCard) {
+                const fallbackContent = state.liveTab === 'guide'
+                    ? renderLiveGuideHtml()
+                    : state.liveTab === 'points'
+                    ? renderPointsTableHtml()
+                    : state.liveTab === 'fixtures'
+                    ? renderFixtureListHtml()
+                    : state.liveTab === 'scorecards'
+                        ? renderScorecardsHtml()
+                        : `<div class="p-20 text-center clean-card bg-white border border-slate-100 shadow-sm"><p class="text-slate-400 font-black uppercase tracking-widest animate-pulse">Waiting for match broadcast...</p></div>${renderMatchTimelineHtml()}`;
+                container.innerHTML = `${tabButtons}${fallbackContent}`;
+                return;
+            }
+
+            const ballsTimeline = (m.recentBalls || []).map(ball => `<div class="ball-circle ${getBallColor(ball)}">${ball}</div>`).join('');
+            const chaseNeeded = Math.max((m.target || 0) - (m.score || 0), 0);
+            const ballsLeft = Math.max(((m.oversLimit || 6) * 6) - ((m.overs || 0) * 6 + (m.balls || 0)), 0);
+            const getTeamScoreCard = (teamName) => {
+                const savedInnings = [m.innings1Summary, m.innings2Summary].find(innings => innings?.battingTeam === teamName);
+                if (savedInnings) {
+                    return {
+                        scoreText: `${savedInnings.score}/${savedInnings.wickets}`,
+                        oversText: `${formatOversValue(savedInnings.overs, savedInnings.balls)} / ${savedInnings.oversLimit || m.oversLimit || 6} ov`,
+                        subtitle: savedInnings === m.innings1Summary ? 'Completed innings' : (m.status === 'finished' ? 'Finished innings' : 'Current chase')
+                    };
+                }
+                if (m.battingTeam === teamName) {
+                    return {
+                        scoreText: `${m.score}/${m.wickets}`,
+                        oversText: `${formatOversValue(m.overs, m.balls)} / ${m.oversLimit || 6} ov`,
+                        subtitle: m.innings === 1 ? 'Batting now' : 'Chasing now'
+                    };
+                }
+                return {
+                    scoreText: 'Yet to bat',
+                    oversText: `${m.oversLimit || 6} ov match`,
+                    subtitle: 'Innings pending'
+                };
+            };
+            const team1View = getTeamScoreCard(m.team1);
+            const team2View = getTeamScoreCard(m.team2);
+            const result = m.innings1Summary && m.innings2Summary ? getMatchResultPayload(m) : null;
+            const battingRows = (m.battingCard || []).map((batter, index) => `
+                <div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto_auto] gap-2 items-center py-2 border-b border-white/5 last:border-b-0 text-sm">
+                    <div class="min-w-0">
+                        <p class="font-bold truncate">${index + 1}. ${batter.name}</p>
+                        <p class="text-[10px] uppercase tracking-widest text-slate-500">${batter.status || 'batting'}</p>
+                    </div>
+                    <span class="font-black text-right">${batter.runs || 0}</span>
+                    <span class="text-slate-400 text-right">${batter.balls || 0}</span>
+                    <span class="text-slate-400 text-right">${batter.fours || 0}</span>
+                    <span class="text-slate-400 text-right">${batter.sixes || 0}</span>
+                </div>
+            `).join('');
+            const bowlingRows = (m.bowlingCard || []).map((bowler, index) => `
+                <div class="grid grid-cols-[minmax(0,1.5fr)_auto_auto_auto] gap-2 items-center py-2 border-b border-white/5 last:border-b-0 text-sm">
+                    <div class="min-w-0">
+                        <p class="font-bold truncate">${index + 1}. ${bowler.name}</p>
+                    </div>
+                    <span class="text-slate-300 text-right">${formatOversValue(bowler.overs, bowler.balls)}</span>
+                    <span class="font-black text-right">${bowler.runs || 0}</span>
+                    <span class="text-slate-300 text-right">${bowler.wickets || 0}</span>
+                </div>
+            `).join('');
+
+            const liveCardHtml = `
+                <div class="clean-card bg-[#081224] border-none shadow-2xl rounded-3xl p-5 md:p-7 text-white relative overflow-hidden">
+                    <div class="absolute inset-0 energy-grid opacity-20 pointer-events-none"></div>
+                    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(34,211,238,0.18),transparent_45%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.22),transparent_35%)] pointer-events-none"></div>
+                    <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                        <div class="w-full lg:w-[38%]">
+                            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-400/20 text-[10px] font-black uppercase tracking-[0.25em] text-cyan-200"><span class="live-dot w-2.5 h-2.5"></span>${m.matchLabel || (m.innings === 1 ? '1st Innings' : 'Run Chase')}</div>
+                            <h2 class="mt-4 text-2xl md:text-4xl font-black uppercase tracking-tight text-cyan-300">${m.team1 || 'Team A'}</h2>
+                            <div class="mt-2 text-3xl md:text-5xl font-black tracking-tighter leading-none">${team1View.scoreText.includes('/') ? `${team1View.scoreText.split('/')[0]}<span class="text-xl md:text-3xl text-slate-500">/${team1View.scoreText.split('/')[1]}</span>` : team1View.scoreText}</div>
+                            <p class="mt-2 text-sm md:text-lg font-bold text-slate-400">${team1View.oversText}</p>
+                            <p class="mt-2 text-xs uppercase tracking-widest text-slate-500">${team1View.subtitle}</p>
+                        </div>
+                        <div class="w-full lg:w-auto flex flex-col items-center gap-3">
+                            <div class="text-2xl md:text-4xl font-black italic text-slate-600">VS</div>
+                            <div class="px-4 py-2 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-[0.3em] text-slate-400 font-black">DPL Live Pulse</div>
+                        </div>
+                        <div class="w-full lg:w-[38%] lg:text-right">
+                            <h2 class="text-2xl md:text-4xl font-black uppercase tracking-tight text-slate-300">${m.team2 || 'Team B'}</h2>
+                            <div class="mt-2 text-3xl md:text-5xl font-black tracking-tighter leading-none">${team2View.scoreText.includes('/') ? `${team2View.scoreText.split('/')[0]}<span class="text-xl md:text-3xl text-slate-500">/${team2View.scoreText.split('/')[1]}</span>` : team2View.scoreText}</div>
+                            <p class="mt-2 text-sm md:text-lg font-bold uppercase tracking-widest text-slate-500">${team2View.oversText}</p>
+                            <p class="mt-2 text-xs uppercase tracking-widest text-slate-500">${team2View.subtitle}</p>
+                        </div>
+                    </div>
+                    ${m.innings1Summary ? `<div class="relative z-10 grid md:grid-cols-2 gap-3 mt-6"><div class="rounded-2xl border border-white/10 bg-white/5 p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">1st Innings</p><p class="font-black text-slate-100">${m.innings1Summary.battingTeam}: ${m.innings1Summary.score}/${m.innings1Summary.wickets}</p></div><button onclick="showInningsModal('${m.matchId}', 1)" class="px-3 py-2 rounded-xl bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white">View</button></div></div>${m.innings2Summary ? `<div class="rounded-2xl border border-white/10 bg-white/5 p-4"><div class="flex items-center justify-between gap-3"><div><p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">2nd Innings</p><p class="font-black text-slate-100">${m.innings2Summary.battingTeam}: ${m.innings2Summary.score}/${m.innings2Summary.wickets}</p></div><button onclick="showInningsModal('${m.matchId}', 2)" class="px-3 py-2 rounded-xl bg-white/10 border border-white/10 text-[10px] font-black uppercase tracking-widest text-white">View</button></div></div>` : '<div class="rounded-2xl border border-white/10 bg-white/5 p-4"><p class="text-[10px] uppercase tracking-widest text-slate-500 mb-1">2nd Innings</p><p class="font-black text-slate-100">Waiting to start</p></div>'}</div>` : ''}
+                    <div class="relative z-10 grid lg:grid-cols-3 gap-4 mt-6">
+                        <div class="bg-white/5 border border-white/10 rounded-3xl p-5 backdrop-blur-sm">
+                            <p class="text-cyan-300 text-[10px] font-black uppercase tracking-[0.25em] mb-2">Striker</p>
+                            <p class="font-black text-lg md:text-xl">${m.striker?.name || '---'}*</p>
+                            <p class="text-2xl md:text-3xl font-black text-amber-300 mt-2">${m.striker?.runs || 0}<span class="text-sm text-slate-500 ml-1">(${m.striker?.balls || 0})</span></p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-3xl p-5 backdrop-blur-sm">
+                            <p class="text-cyan-300 text-[10px] font-black uppercase tracking-[0.25em] mb-2">Non-Striker</p>
+                            <p class="font-black text-lg md:text-xl">${m.nonStriker?.name || '---'}</p>
+                            <p class="text-2xl md:text-3xl font-black text-amber-300 mt-2">${m.nonStriker?.runs || 0}<span class="text-sm text-slate-500 ml-1">(${m.nonStriker?.balls || 0})</span></p>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-3xl p-5">
+                            <p class="text-purple-300 text-[10px] font-black uppercase tracking-[0.25em] mb-2">Current Bowler</p>
+                            <p class="font-black text-lg md:text-xl">${m.bowler?.name || '---'}</p>
+                            <p class="text-2xl md:text-3xl font-black text-purple-300 mt-2">${m.bowler?.wickets || 0}-${m.bowler?.runs || 0}</p>
+                            <p class="text-xs uppercase tracking-widest text-slate-500 mt-1">${m.bowler?.overs || 0}.${m.bowler?.balls || 0} overs</p>
+                        </div>
+                    </div>
+                    <div class="relative z-10 grid lg:grid-cols-[1fr_1fr] gap-6 mt-6">
+                        <div class="space-y-5">
+                            <div class="bg-white/5 border border-white/10 rounded-3xl p-6">
+                                <p class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-400 mb-4">Last Balls</p>
+                                <div class="flex gap-2 overflow-x-auto pb-1">${ballsTimeline || '<span class="text-slate-500 text-sm">No balls yet</span>'}</div>
+                            </div>
+                            ${m.innings === 2 && m.status === 'active' ? `<div class="rounded-3xl border border-amber-400/20 bg-amber-400/10 p-5 text-center text-amber-200 font-black uppercase tracking-widest">Need ${chaseNeeded} from ${ballsLeft} balls</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="relative z-10 grid xl:grid-cols-2 gap-6 mt-6">
+                        <div class="bg-white/5 border border-white/10 rounded-3xl p-5">
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <p class="text-cyan-300 text-[10px] font-black uppercase tracking-[0.25em]">Batting Card</p>
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500">All batters</p>
+                            </div>
+                            <div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto_auto] gap-2 text-[10px] uppercase tracking-widest text-slate-500 pb-2 border-b border-white/10">
+                                <span>Batter</span><span class="text-right">R</span><span class="text-right">B</span><span class="text-right">4s</span><span class="text-right">6s</span>
+                            </div>
+                            <div class="mt-2">${battingRows || '<p class="text-sm text-slate-500 py-3">Batters will appear here.</p>'}</div>
+                        </div>
+                        <div class="bg-white/5 border border-white/10 rounded-3xl p-5">
+                            <div class="flex items-center justify-between gap-3 mb-3">
+                                <p class="text-purple-300 text-[10px] font-black uppercase tracking-[0.25em]">Bowling Card</p>
+                                <p class="text-[10px] uppercase tracking-widest text-slate-500">All bowlers</p>
+                            </div>
+                            <div class="grid grid-cols-[minmax(0,1.5fr)_auto_auto_auto] gap-2 text-[10px] uppercase tracking-widest text-slate-500 pb-2 border-b border-white/10">
+                                <span>Bowler</span><span class="text-right">O</span><span class="text-right">R</span><span class="text-right">W</span>
+                            </div>
+                            <div class="mt-2">${bowlingRows || '<p class="text-sm text-slate-500 py-3">Bowlers will appear here.</p>'}</div>
+                        </div>
+                    </div>
+                    ${m.status === 'finished' && result ? `<div class="relative z-10 mt-6 rounded-3xl border border-emerald-400/20 bg-emerald-400/10 p-5 md:p-6"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4"><div><p class="text-[10px] uppercase tracking-widest text-emerald-300 mb-2">${m.matchLabel || 'Completed Match'}</p><h3 class="text-2xl md:text-3xl font-black text-white">Congratulations ${result.winner || 'Winner'}!</h3><p class="mt-2 text-sm text-emerald-100">${result.resultText}</p>${m.playerOfTheMatch ? `<p class="mt-2 text-sm text-green-300 font-black">Player of the Match: ${m.playerOfTheMatch.name} (${m.playerOfTheMatch.team})</p>` : ''}</div><div class="flex flex-wrap gap-2"><button onclick="downloadMatchPdf('${m.matchId}')" class="px-5 py-3 rounded-2xl bg-cyan-300 text-slate-900 font-black uppercase tracking-widest text-xs hover:bg-cyan-200 transition-colors">PDF</button><button onclick="navigateTo('stats')" class="px-5 py-3 rounded-2xl bg-white text-slate-900 font-black uppercase tracking-widest text-xs hover:bg-cyan-100 transition-colors">${m.matchLabel || 'Match'} Box</button></div></div></div>` : ''}
+                </div>
+            `;
+            const liveBoardHtml = `${liveCardHtml}${renderMatchTimelineHtml()}`;
+            const tabContent = state.liveTab === 'guide'
+                ? renderLiveGuideHtml()
+                : state.liveTab === 'points'
+                ? renderPointsTableHtml()
+                : state.liveTab === 'fixtures'
+                ? renderFixtureListHtml()
+                : state.liveTab === 'scorecards'
+                    ? renderScorecardsHtml()
+                    : liveBoardHtml;
+            container.innerHTML = `${tabButtons}${tabContent}`;
+        }
+
+        function renderLiveMatchAdminUI() {
+            hideLegacyLiveScoreCard();
+            const container = document.getElementById('admin-scoring-container');
+            const log = document.getElementById('admin-ball-log');
+            if (!container || !log) return;
+            const m = state.liveMatch;
+
+            if (m.status === 'setup_wizard') {
+                const nextPlan = getNextTournamentMatchPlan();
+                const fixedFixture = nextPlan.fixture || null;
+                const selectedTeam1 = fixedFixture?.team1 || '';
+                const selectedTeam2 = fixedFixture?.team2 || '';
+                container.innerHTML = `
+                    <div class="grid sm:grid-cols-2 gap-4 max-w-3xl mb-8">
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Tournament Match</label><input type="text" id="setup-match-label" class="clean-input bg-slate-50" value="${nextPlan.matchLabel}" readonly></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Overs Per Innings</label><input type="number" id="setup-overs" class="clean-input" min="1" max="50" value="${m.oversLimit || 6}" placeholder="6"></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Team A</label><input type="text" id="setup-team1" class="clean-input ${fixedFixture ? 'bg-slate-50' : ''}" placeholder="AP11" value="${selectedTeam1}" oninput="updateMatchSetupRosterOptions()" ${fixedFixture ? 'readonly' : ''}></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Team B</label><input type="text" id="setup-team2" class="clean-input ${fixedFixture ? 'bg-slate-50' : ''}" placeholder="Cotton11" value="${selectedTeam2}" oninput="updateMatchSetupRosterOptions()" ${fixedFixture ? 'readonly' : ''}></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Toss Winner</label><select id="setup-toss" class="clean-input" onchange="updateMatchSetupRosterOptions()"><option value="">Select team</option>${selectedTeam1 ? `<option value="${selectedTeam1}">${selectedTeam1}</option>` : ''}${selectedTeam2 ? `<option value="${selectedTeam2}">${selectedTeam2}</option>` : ''}</select></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Decision</label><select id="setup-decision" class="clean-input" onchange="updateMatchSetupRosterOptions()"><option value="Bat">Batting</option><option value="Bowl">Bowling</option></select></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Striker</label><select id="setup-striker" class="clean-input"><option value="">Select opener</option></select></div>
+                        <div><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Non-Striker</label><select id="setup-nonstriker" class="clean-input"><option value="">Select opener</option></select></div>
+                        <div class="sm:col-span-2"><label class="text-[10px] font-black text-slate-400 uppercase mb-1 block">Opening Bowler</label><select id="setup-bowler" class="clean-input"><option value="">Select bowler</option></select></div>
+                    </div>
+                    <button onclick="adminStartMatch()" class="bg-blue-600 text-white w-full py-4 rounded-xl font-black uppercase tracking-widest shadow-xl transition-all hover:bg-blue-700">Launch Live Feed</button>
+                `;
+                setTimeout(updateMatchSetupRosterOptions, 0);
+                log.innerHTML = '<p class="text-slate-600 italic">Waiting for match setup...</p>';
+                return;
+            }
+
+            if (m.status === 'setup') {
+                container.innerHTML = `<div class="text-center py-12 text-slate-400 font-bold uppercase tracking-widest">Broadcast offline. Click "Create Match" to begin.</div>`;
+                log.innerHTML = '<p class="text-slate-600 italic">No match events yet.</p>';
+                return;
+            }
+
+            let dashboard = '';
+            if (m.needNewBatter) {
+                dashboard = `<div class="bg-red-50 p-6 rounded-2xl border border-red-200"><h3 class="font-black text-red-600 uppercase mb-4 tracking-widest text-center">Wicket. New batter required</h3><div class="grid gap-3 md:grid-cols-[1fr_1fr_auto]"><select id="select-new-batter" class="clean-input border-red-300"><option value="">Choose from roster</option>${buildPlayerOptions(m.battingTeam, 'batter', false)}</select><input type="text" id="input-new-batter" class="clean-input border-red-300" placeholder="Or type batter name"><button onclick="resolveNewBatter()" class="bg-red-600 text-white px-8 rounded-xl font-bold uppercase">Update</button></div></div>`;
+            } else if (m.needNewBowler) {
+                const existingBowlerOptions = (m.bowlingCard || [])
+                    .map(bowler => `<option value="${bowler.name}">${bowler.name} (${formatOversValue(bowler.overs, bowler.balls)} ov, ${bowler.wickets}-${bowler.runs})</option>`)
+                    .join('');
+                dashboard = `<div class="bg-blue-50 p-6 rounded-2xl border border-blue-200"><h3 class="font-black text-blue-600 uppercase mb-4 tracking-widest text-center">Over ended. New bowler required</h3><div class="grid gap-3 md:grid-cols-[1fr_1fr_1fr_auto]"><select id="select-new-bowler" class="clean-input border-blue-300"><option value="">Choose from roster</option>${buildPlayerOptions(m.bowlingTeam, 'bowler', false)}</select><input type="text" id="input-new-bowler" class="clean-input border-blue-300" placeholder="Type new bowler"><select id="select-prev-bowler" class="clean-input border-blue-300"><option value="">Choose previous bowler</option>${existingBowlerOptions}</select><button onclick="resolveNewBowler()" class="bg-blue-600 text-white px-8 rounded-xl font-bold uppercase">Update</button></div><p class="mt-3 text-xs text-blue-700">Use roster select for fast scoring, or reuse a previous bowler when someone comes back.</p></div>`;
+            } else {
+                dashboard = `
+                    <div class="grid grid-cols-4 sm:grid-cols-7 gap-3 mb-6">
+                        <button onclick="scoreBall(0)" class="score-btn">0</button>
+                        <button onclick="scoreBall(1)" class="score-btn">1</button>
+                        <button onclick="scoreBall(2)" class="score-btn">2</button>
+                        <button onclick="scoreBall(3)" class="score-btn">3</button>
+                        <button onclick="scoreBall(4)" class="score-btn btn-4">4</button>
+                        <button onclick="scoreBall(6)" class="score-btn btn-6">6</button>
+                        <button onclick="scoreBall(0, 'none', true)" class="score-btn btn-w">W</button>
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-slate-100 pt-6">
+                        <button onclick="scoreBall(0, 'Wd')" class="py-3 bg-slate-50 rounded-xl text-xs font-black text-slate-700 uppercase border border-slate-200 tracking-widest hover:bg-slate-100 transition-colors shadow-sm">Wide</button>
+                        <button onclick="scoreBall(0, 'Nb')" class="py-3 bg-slate-50 rounded-xl text-xs font-black text-slate-700 uppercase border border-slate-200 tracking-widest hover:bg-slate-100 transition-colors shadow-sm">No Ball</button>
+                        <button onclick="scoreBall(1, 'Lb')" class="py-3 bg-slate-50 rounded-xl text-xs font-black text-slate-700 uppercase border border-slate-200 tracking-widest hover:bg-slate-100 transition-colors shadow-sm">Leg Bye</button>
+                        <button onclick="scoreBall(1, 'B')" class="py-3 bg-slate-50 rounded-xl text-xs font-black text-slate-700 uppercase border border-slate-200 tracking-widest hover:bg-slate-100 transition-colors shadow-sm">Bye</button>
+                    </div>
+                `;
+            }
+
+            const needRuns = Math.max((m.target || 0) - (m.score || 0), 0);
+            const batterAdminRows = (m.battingCard || []).map(batter => `<div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto] gap-2 py-2 border-b border-slate-100 last:border-b-0 text-sm"><div class="min-w-0"><p class="font-bold truncate text-slate-900">${batter.name}</p><p class="text-[10px] uppercase tracking-widest text-slate-400">${batter.status || 'batting'}</p></div><span class="text-right font-black text-slate-900">${batter.runs || 0}</span><span class="text-right text-slate-500">${batter.balls || 0}</span><span class="text-right text-slate-500">${batter.fours || 0}/${batter.sixes || 0}</span></div>`).join('');
+            const bowlerAdminRows = (m.bowlingCard || []).map(bowler => `<div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto] gap-2 py-2 border-b border-slate-100 last:border-b-0 text-sm"><div class="min-w-0"><p class="font-bold truncate text-slate-900">${bowler.name}</p></div><span class="text-right text-slate-500">${formatOversValue(bowler.overs, bowler.balls)}</span><span class="text-right font-black text-slate-900">${bowler.runs || 0}</span><span class="text-right text-slate-500">${bowler.wickets || 0}</span></div>`).join('');
+            const correctionPanel = `
+                <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4 mt-6">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                            <p class="text-[10px] uppercase tracking-widest text-amber-600 font-black">Admin Correction Rights</p>
+                            <h4 class="text-sm font-black text-slate-900">Edit live score if something goes wrong in real time</h4>
+                        </div>
+                    </div>
+                    <div class="grid md:grid-cols-6 gap-3">
+                        <input id="fix-score" type="number" min="0" class="clean-input bg-white" value="${m.score || 0}" placeholder="Runs">
+                        <input id="fix-wickets" type="number" min="0" max="10" class="clean-input bg-white" value="${m.wickets || 0}" placeholder="Wickets">
+                        <input id="fix-overs" type="number" min="0" class="clean-input bg-white" value="${m.overs || 0}" placeholder="Overs">
+                        <input id="fix-balls" type="number" min="0" max="5" class="clean-input bg-white" value="${m.balls || 0}" placeholder="Balls">
+                        <input id="fix-striker" type="text" class="clean-input bg-white" value="${m.striker?.name || ''}" placeholder="Striker">
+                        <input id="fix-nonstriker" type="text" class="clean-input bg-white" value="${m.nonStriker?.name || ''}" placeholder="Non-Striker">
+                    </div>
+                    <div class="grid md:grid-cols-[1fr_auto] gap-3 mt-3">
+                        <input id="fix-bowler" type="text" class="clean-input bg-white" value="${m.bowler?.name || ''}" placeholder="Bowler">
+                        <button onclick="adminApplyScoreCorrection()" class="px-6 py-3 rounded-xl bg-amber-600 text-white font-black uppercase tracking-widest text-xs hover:bg-amber-700 transition-colors">Apply Correction</button>
+                    </div>
+                </div>
+            `;
+            container.innerHTML = `
+                <div class="bg-slate-900 rounded-2xl p-6 text-white mb-8 shadow-inner border border-slate-800">
+                    <div class="flex justify-between items-center mb-6 border-b border-white/5 pb-6 gap-4">
+                        <div>
+                            <p class="text-cyan-300 font-black uppercase tracking-widest text-[10px] mb-2">${m.matchLabel || getStageDisplayName(m.stage)}</p>
+                            <p class="text-emerald-400 font-black text-6xl font-mono">${m.score || 0}<span class="text-3xl opacity-40">/${m.wickets || 0}</span></p>
+                            <p class="text-slate-400 font-bold tracking-widest uppercase text-[10px] mt-1">${m.battingTeam || 'Batting'} | ${m.overs || 0}.${m.balls || 0}/${m.oversLimit || 6} ov</p>
+                        </div>
+                        ${m.innings === 2 ? `<div class="text-right"><p class="text-amber-300 font-black uppercase text-xs">Target: ${m.target}</p><p class="text-slate-500 text-[10px]">Need ${needRuns}</p></div>` : ''}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div><p class="text-cyan-300 font-black uppercase text-[10px] tracking-widest mb-1">Striker</p><p class="font-black truncate text-lg">${m.striker?.name || '---'}: ${m.striker?.runs || 0}(${m.striker?.balls || 0})</p></div>
+                        <div><p class="text-purple-300 font-black uppercase text-[10px] tracking-widest mb-1">Bowler</p><p class="font-black truncate text-lg">${m.bowler?.name || '---'}: ${m.bowler?.wickets || 0}-${m.bowler?.runs || 0}</p></div>
+                    </div>
+                </div>
+                ${m.status === 'finished' ? '<div class="p-12 text-center bg-slate-50 rounded-2xl font-black text-slate-400 tracking-widest uppercase border border-dashed border-slate-300">Match concluded and locked</div>' : dashboard}
+                ${correctionPanel}
+                <div class="grid xl:grid-cols-2 gap-4 mt-6">
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                        <div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto] gap-2 text-[10px] uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2">
+                            <span>Batter</span><span class="text-right">R</span><span class="text-right">B</span><span class="text-right">4/6</span>
+                        </div>
+                        <div class="mt-2">${batterAdminRows || '<p class="text-sm text-slate-400 py-3">Batters will appear here.</p>'}</div>
+                    </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                        <div class="grid grid-cols-[minmax(0,1.4fr)_auto_auto_auto] gap-2 text-[10px] uppercase tracking-widest text-slate-400 border-b border-slate-100 pb-2">
+                            <span>Bowler</span><span class="text-right">O</span><span class="text-right">R</span><span class="text-right">W</span>
+                        </div>
+                        <div class="mt-2">${bowlerAdminRows || '<p class="text-sm text-slate-400 py-3">Bowlers will appear here.</p>'}</div>
+                    </div>
+                </div>
+            `;
+
+            if (m.recentBalls && m.recentBalls.length) {
+                log.innerHTML = m.recentBalls.map((ball, index) => `<div class="flex items-center justify-between border-b border-slate-800 py-2"><span class="text-slate-600 font-bold uppercase text-[9px]">Event ${index + 1}</span><span class="font-black ${ball === 'W' ? 'text-red-500' : 'text-white'} text-sm">${ball}</span></div>`).reverse().join('');
+            } else {
+                log.innerHTML = '<p class="text-slate-600 italic">No deliveries logged yet.</p>';
+            }
+        }
+
+        function getOversAsNumber(overs, balls) {
+            return Number((Number(overs || 0) + (Number(balls || 0) / 6)).toFixed(3));
+        }
+
+        function cloneJson(data) {
+            return JSON.parse(JSON.stringify(data));
+        }
+
+        function summarizeCurrentInnings() {
+            const m = state.liveMatch;
+            syncCurrentPlayersToCards();
+            return {
+                battingTeam: m.battingTeam,
+                bowlingTeam: m.bowlingTeam,
+                score: m.score || 0,
+                wickets: m.wickets || 0,
+                overs: m.overs || 0,
+                balls: m.balls || 0,
+                oversLimit: m.oversLimit || 6,
+                battingCard: cloneJson(m.battingCard || []),
+                bowlingCard: cloneJson(m.bowlingCard || [])
+            };
+        }
+
+        function flattenPlayerStats(match) {
+            const players = [];
+            [match.innings1Summary, match.innings2Summary].forEach(innings => {
+                if (!innings) return;
+                (innings.battingCard || []).forEach(batter => {
+                    const existing = players.find(p => p.name === batter.name && p.team === innings.battingTeam);
+                    if (existing) {
+                        existing.battingRuns += batter.runs || 0;
+                        existing.battingBalls += batter.balls || 0;
+                        existing.fours += batter.fours || 0;
+                        existing.sixes += batter.sixes || 0;
+                    } else {
+                        players.push({
+                            name: batter.name,
+                            team: innings.battingTeam,
+                            battingRuns: batter.runs || 0,
+                            battingBalls: batter.balls || 0,
+                            fours: batter.fours || 0,
+                            sixes: batter.sixes || 0,
+                            wickets: 0,
+                            bowlingRuns: 0,
+                            bowlingOvers: 0
+                        });
+                    }
+                });
+                (innings.bowlingCard || []).forEach(bowler => {
+                    const existing = players.find(p => p.name === bowler.name && p.team === innings.bowlingTeam);
+                    const next = existing || {
+                        name: bowler.name,
+                        team: innings.bowlingTeam,
+                        battingRuns: 0,
+                        battingBalls: 0,
+                        fours: 0,
+                        sixes: 0,
+                        wickets: 0,
+                        bowlingRuns: 0,
+                        bowlingOvers: 0
+                    };
+                    next.wickets += bowler.wickets || 0;
+                    next.bowlingRuns += bowler.runs || 0;
+                    next.bowlingOvers += getOversAsNumber(bowler.overs, bowler.balls);
+                    if (!existing) players.push(next);
+                });
+            });
+            return players;
+        }
+
+        function getPlayerOfTheMatch(match) {
+            const players = flattenPlayerStats(match).map(player => {
+                const strikeRateBonus = player.battingBalls >= 10 ? (player.battingRuns / Math.max(player.battingBalls, 1)) * 12 : 0;
+                const bowlingImpact = player.wickets * 28;
+                const economyBonus = player.bowlingOvers > 0 ? Math.max(0, 12 - (player.bowlingRuns / player.bowlingOvers)) * 4 : 0;
+                const boundaryBonus = (player.fours * 1.5) + (player.sixes * 2.5);
+                return {
+                    ...player,
+                    rating: Number((player.battingRuns + strikeRateBonus + bowlingImpact + economyBonus + boundaryBonus).toFixed(2))
+                };
+            });
+            players.sort((a, b) => b.rating - a.rating || b.battingRuns - a.battingRuns || b.wickets - a.wickets);
+            return players[0] || null;
+        }
+
+        function getMatchResultPayload(match) {
+            const first = match.innings1Summary;
+            const second = match.innings2Summary;
+            if (!first || !second) return { winner: '', loser: '', resultText: 'Match completed' };
+
+            if (second.score >= first.score + 1) {
+                const wicketsLeft = Math.max(10 - second.wickets, 0);
+                return {
+                    winner: second.battingTeam,
+                    loser: first.battingTeam,
+                    resultText: `${second.battingTeam} won by ${wicketsLeft} wickets`
+                };
+            }
+
+            const runMargin = Math.max(first.score - second.score, 0);
+            return {
+                winner: first.battingTeam,
+                loser: second.battingTeam,
+                resultText: `${first.battingTeam} won by ${runMargin} runs`
+            };
+        }
+
+        async function archiveFinishedMatch() {
+            const m = state.liveMatch;
+            if (m.archived || !m.innings1Summary || !m.innings2Summary || !m.matchId || !matchesRef) return;
+            const result = getMatchResultPayload(m);
+            const playerOfTheMatch = getPlayerOfTheMatch(m);
+            const record = {
+                matchId: m.matchId,
+                fixtureId: m.fixtureId || '',
+                stage: m.stage || 'league',
+                matchNumber: m.matchNumber || 0,
+                matchLabel: m.matchLabel || getStageDisplayName(m.stage),
+                oversLimit: m.oversLimit || 6,
+                team1: m.team1,
+                team2: m.team2,
+                innings1Summary: cloneJson(m.innings1Summary),
+                innings2Summary: cloneJson(m.innings2Summary),
+                result,
+                playerOfTheMatch,
+                savedAt: Date.now()
+            };
+            await set(ref(db, `artifacts/${appId}/public/data/matches/${m.matchId}`), record);
+            state.liveMatch.playerOfTheMatch = playerOfTheMatch;
+            state.liveMatch.archived = true;
+            saveLiveMatchState();
+        }
+
+        async function deleteSavedMatch(matchId) {
+            if (!matchId || !remove) return;
+            if (!confirm('Delete this saved match from Firebase?')) return;
+            await remove(ref(db, `artifacts/${appId}/public/data/matches/${matchId}`));
+        }
+
+        function buildPointsTable(matches) {
+            const table = {};
+            matches.forEach(match => {
+                const first = match.innings1Summary;
+                const second = match.innings2Summary;
+                if (!first || !second) return;
+                [match.team1, match.team2].forEach(team => {
+                    if (!table[team]) {
+                        table[team] = { team, matches: 0, wins: 0, losses: 0, points: 0, runsFor: 0, oversFaced: 0, runsAgainst: 0, oversBowled: 0 };
+                    }
+                    table[team].matches += 1;
+                });
+                const result = match.result || getMatchResultPayload(match);
+                const addInnings = (battingTeam, score, overs, balls, bowlingTeam) => {
+                    table[battingTeam].runsFor += score || 0;
+                    table[battingTeam].oversFaced += getOversAsNumber(overs, balls);
+                    table[bowlingTeam].runsAgainst += score || 0;
+                    table[bowlingTeam].oversBowled += getOversAsNumber(overs, balls);
+                };
+                addInnings(first.battingTeam, first.score, first.overs, first.balls, first.bowlingTeam);
+                addInnings(second.battingTeam, second.score, second.overs, second.balls, second.bowlingTeam);
+                if (result.winner) {
+                    table[result.winner].wins += 1;
+                    table[result.winner].points += 2;
+                    table[result.loser].losses += 1;
+                }
+            });
+
+            return Object.values(table).map(row => {
+                const forRate = row.oversFaced > 0 ? row.runsFor / row.oversFaced : 0;
+                const againstRate = row.oversBowled > 0 ? row.runsAgainst / row.oversBowled : 0;
+                return { ...row, nrr: Number((forRate - againstRate).toFixed(3)) };
+            }).sort((a, b) => b.points - a.points || b.nrr - a.nrr || b.wins - a.wins);
+        }
+
+        function renderStatsDashboard() {
+            const potmCard = document.getElementById('stats-potm-card');
+            const battersList = document.getElementById('stats-top-batters');
+            const bowlersList = document.getElementById('stats-top-bowlers');
+            const pointsTable = document.getElementById('points-table-container');
+            const history = document.getElementById('match-history-container');
+            if (!potmCard || !battersList || !bowlersList || !pointsTable || !history) return;
+
+            const latest = state.matches[0];
+            const players = state.matches.flatMap(flattenPlayerStats);
+            const batterTotals = {};
+            const bowlerTotals = {};
+            players.forEach(player => {
+                batterTotals[player.name] = (batterTotals[player.name] || 0) + (player.battingRuns || 0);
+                bowlerTotals[player.name] = (bowlerTotals[player.name] || 0) + (player.wickets || 0);
+            });
+            const topBatters = Object.entries(batterTotals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const topBowlers = Object.entries(bowlerTotals).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const leagueMatches = getSavedMatchesByStage('league');
+            const points = buildPointsTable(leagueMatches);
+
+            potmCard.innerHTML = latest?.playerOfTheMatch
+                ? `<h2 class="text-lg font-bold text-indigo-900 mb-4 flex items-center gap-2">Player Of The Match</h2><div class="bg-white p-4 rounded-xl shadow-sm border border-indigo-50 mb-3 flex items-center gap-4"><div class="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center font-bold text-indigo-600 shrink-0">#1</div><div class="truncate"><p class="font-bold text-slate-900 truncate">${latest.playerOfTheMatch.name}</p><p class="text-xs text-slate-500">${latest.playerOfTheMatch.team} | Rating ${latest.playerOfTheMatch.rating}</p></div></div><p class="text-xs uppercase tracking-widest text-slate-400">Latest saved match</p>`
+                : `<h2 class="text-lg font-bold text-indigo-900 mb-4">Player Of The Match</h2><p class="text-sm text-slate-500">Finish and save matches to see player awards.</p>`;
+
+            battersList.innerHTML = topBatters.length
+                ? topBatters.map(([name, runs], idx) => `<li class="p-4 flex justify-between items-center"><span class="font-medium">${idx + 1}. ${name}</span><span class="font-bold text-blue-600">${runs} Runs</span></li>`).join('')
+                : '<li class="p-4 text-sm text-slate-400">No batting data yet.</li>';
+            bowlersList.innerHTML = topBowlers.length
+                ? topBowlers.map(([name, wkts], idx) => `<li class="p-4 flex justify-between items-center"><span class="font-medium">${idx + 1}. ${name}</span><span class="font-bold text-emerald-600">${wkts} Wkts</span></li>`).join('')
+                : '<li class="p-4 text-sm text-slate-400">No bowling data yet.</li>';
+
+            pointsTable.innerHTML = points.length
+                ? `<table class="w-full text-sm min-w-[520px]"><thead><tr class="text-left text-xs uppercase tracking-widest text-slate-400 border-b border-slate-100"><th class="py-2 pr-4">Team</th><th class="py-2 pr-4">M</th><th class="py-2 pr-4">W</th><th class="py-2 pr-4">L</th><th class="py-2 pr-4">Pts</th><th class="py-2">NRR</th></tr></thead><tbody>${points.map(row => `<tr class="border-b border-slate-50"><td class="py-3 pr-4 font-bold text-slate-900">${row.team}</td><td class="py-3 pr-4">${row.matches}</td><td class="py-3 pr-4">${row.wins}</td><td class="py-3 pr-4">${row.losses}</td><td class="py-3 pr-4 font-black text-blue-600">${row.points}</td><td class="py-3 font-semibold ${row.nrr >= 0 ? 'text-emerald-600' : 'text-red-500'}">${row.nrr.toFixed(3)}</td></tr>`).join('')}</tbody></table>`
+                : '<p class="text-sm text-slate-400">No saved matches yet.</p>';
+
+            history.innerHTML = state.matches.length
+                ? state.matches.map(match => {
+                    const result = match.result || getMatchResultPayload(match);
+                    const potm = match.playerOfTheMatch;
+                    const deleteBtn = state.userRole === 'admin' ? `<button onclick="deleteSavedMatch('${match.id}')" class="mt-3 px-3 py-2 rounded-lg bg-red-50 text-red-600 text-xs font-bold uppercase tracking-widest border border-red-200 hover:bg-red-100">Delete Match</button>` : '';
+                    const pdfBtn = `<button onclick="downloadMatchPdf('${match.id}')" class="mt-3 px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold uppercase tracking-widest border border-slate-900 hover:bg-slate-700">PDF</button>`;
+                    return `<div class="rounded-2xl border border-slate-200 p-4 bg-slate-50"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><p class="text-xs uppercase tracking-widest text-cyan-600 font-black mb-1">${match.matchLabel || getStageDisplayName(match.stage)}</p><p class="text-sm font-black text-slate-900">${match.team1} vs ${match.team2}</p><p class="text-xs uppercase tracking-widest text-slate-500 mt-1">${result.resultText}</p></div><div class="text-sm text-slate-600">${new Date(match.savedAt || Date.now()).toLocaleString()}</div></div><div class="grid sm:grid-cols-2 gap-3 mt-4 text-sm"><div class="rounded-xl bg-white border border-slate-100 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">${match.innings1Summary?.battingTeam}</p><p class="font-black text-slate-900">${match.innings1Summary?.score}/${match.innings1Summary?.wickets} (${formatOversValue(match.innings1Summary?.overs, match.innings1Summary?.balls)} / ${match.oversLimit || match.innings1Summary?.oversLimit || 6} ov)</p><button onclick="showInningsModal('${match.id || match.matchId}', 1)" class="mt-3 px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest">Inning 1</button></div><div class="rounded-xl bg-white border border-slate-100 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">${match.innings2Summary?.battingTeam}</p><p class="font-black text-slate-900">${match.innings2Summary?.score}/${match.innings2Summary?.wickets} (${formatOversValue(match.innings2Summary?.overs, match.innings2Summary?.balls)} / ${match.oversLimit || match.innings2Summary?.oversLimit || 6} ov)</p><button onclick="showInningsModal('${match.id || match.matchId}', 2)" class="mt-3 px-3 py-2 rounded-lg bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest">Inning 2</button></div></div>${potm ? `<p class="mt-3 text-sm text-green-600 font-black">Player of the match: ${potm.name} (${potm.team})</p>` : ''}<div class="flex flex-wrap gap-2">${pdfBtn}${deleteBtn}</div></div>`;
+                }).join('')
+                : '<p class="text-sm text-slate-400">Match history will appear here after the first completed match is saved.</p>';
+            renderChart();
+            renderLeagueTournamentStatus();
+        }
+
+        function renderLeagueTournamentStatus() {
+            const container = document.getElementById('league-tournament-status');
+            if (!container) return;
+            const nextPlan = getNextTournamentMatchPlan();
+            const leagueDone = getSavedMatchesByStage('league').length;
+            const leagueTarget = getLeagueMatchTarget();
+            const points = buildPointsTable(getSavedMatchesByStage('league'));
+            const phaseText = nextPlan.stage === 'complete'
+                ? 'Tournament complete'
+                : `Next auto-created fixture: ${nextPlan.matchLabel}`;
+            const fixtureText = nextPlan.fixture ? `${nextPlan.fixture.team1} vs ${nextPlan.fixture.team2}` : 'Teams will be set by admin for the next match.';
+
+            container.innerHTML = `
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-widest text-cyan-600 font-black mb-2">Tournament Engine</p>
+                        <h3 class="text-xl font-black text-slate-900">${phaseText}</h3>
+                        <p class="text-sm text-slate-600 mt-2">${fixtureText}</p>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 text-sm min-w-[260px]">
+                        <div class="rounded-xl bg-white border border-slate-200 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">League Done</p><p class="font-black text-slate-900">${leagueDone}/${leagueTarget}</p></div>
+                        <div class="rounded-xl bg-white border border-slate-200 p-3"><p class="text-xs uppercase tracking-widest text-slate-400 mb-1">Qualified</p><p class="font-black text-slate-900">${points.slice(0, 4).map(row => row.team).join(', ') || 'TBD'}</p></div>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderChart() {
             const ctx = document.getElementById('statsChart');
             if(!ctx) return;
             Chart.defaults.font.family = "'Outfit', sans-serif";
-            new Chart(ctx.getContext('2d'), {
+            const labels = state.matches.slice().reverse().map((match, idx) => match.matchLabel || `Match ${idx + 1}`);
+            const runs = state.matches.slice().reverse().map(match => (match.innings1Summary?.score || 0) + (match.innings2Summary?.score || 0));
+            const wickets = state.matches.slice().reverse().map(match => (match.innings1Summary?.wickets || 0) + (match.innings2Summary?.wickets || 0));
+            if (statsChartInstance) statsChartInstance.destroy();
+            statsChartInstance = new Chart(ctx.getContext('2d'), {
                 type: 'bar',
-                data: { labels: ['Season 1', 'Season 2', 'Season 3'], datasets: [{ label: 'Runs', data: [687, 717, 0], backgroundColor: '#2563eb' }, { label: 'Wickets', data: [112, 95, 0], backgroundColor: '#10b981' }] },
+                data: {
+                    labels: labels.length ? labels : ['No Matches'],
+                    datasets: [
+                        { label: 'Runs', data: labels.length ? runs : [0], backgroundColor: '#2563eb' },
+                        { label: 'Wickets', data: labels.length ? wickets : [0], backgroundColor: '#10b981' }
+                    ]
+                },
                 options: { responsive: true, maintainAspectRatio: false }
             });
             state.chartInitialized = true;
         }
 
+        // --- Hub Forms ---
         function handleVillageChange(s) { if (s.value === 'Other') { showModal("Blocked", "<p class='text-center'>Outsiders not allowed.</p>"); s.value = ""; } }
-        
         async function handlePlayerRegistration(e) {
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Submitting..."; btn.disabled = true;
             try {
-                if (!isFirebaseReady || !fbDb) throw new Error("Database not ready.");
+                if (!isFirebaseReady || !set || !get) throw new Error("Database not ready.");
                 const name = formatName(document.getElementById('reg-name').value);
                 const mobile = document.getElementById('reg-mobile').value;
                 const role = document.getElementById('reg-role').value;
                 const pin = document.getElementById('reg-pin').value;
 
-                const playerRef = fbDb.ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
-                const snapshot = await fbDb.get(playerRef);
+                const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
+                const snapshot = await get(playerRef);
                 if (snapshot.exists()) {
                     showModal("Error", "Mobile number is already registered.");
                 } else {
-                    await fbDb.set(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20 });
+                    await set(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20, playerTag: 'Choice' });
                     switchInnerTab('hub', 'selection'); 
                     showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); 
                     e.target.reset();
@@ -2077,12 +3833,12 @@
             e.preventDefault();
             const btn = e.target.querySelector('button'); btn.innerText = "Checking..."; btn.disabled = true;
             try {
-                if (!isFirebaseReady || !fbDb) throw new Error("Database not ready.");
+                if (!isFirebaseReady || !get) throw new Error("Database not ready.");
                 const mobile = document.getElementById('login-mobile').value;
                 const pin = document.getElementById('login-pin').value;
                 
-                const playerRef = fbDb.ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
-                const snapshot = await fbDb.get(playerRef);
+                const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
+                const snapshot = await get(playerRef);
                 
                 if (snapshot.exists() && snapshot.val().pin === pin) {
                     state.loggedInPlayer = snapshot.val(); 
@@ -2099,10 +3855,59 @@
         
         function handlePlayerLogout() { state.loggedInPlayer = null; switchInnerTab('hub', 'selection'); }
 
+        function getPlayerMatchStats(playerRecord) {
+            if (!playerRecord) {
+                return {
+                    matches: 0,
+                    runs: 0,
+                    ballsFaced: 0,
+                    wickets: 0,
+                    oversBowled: 0,
+                    log: []
+                };
+            }
+            const playerName = formatName(playerRecord.name);
+            const playerTeam = (playerRecord.team || '').trim();
+            const log = [];
+            let runs = 0;
+            let ballsFaced = 0;
+            let wickets = 0;
+            let oversBowled = 0;
+
+            (state.matches || []).forEach(match => {
+                const players = flattenPlayerStats(match);
+                const row = players.find(item => formatName(item.name) === playerName && (!playerTeam || item.team === playerTeam));
+                if (!row) return;
+                runs += row.battingRuns || 0;
+                ballsFaced += row.battingBalls || 0;
+                wickets += row.wickets || 0;
+                oversBowled += row.bowlingOvers || 0;
+                log.push({
+                    matchLabel: match.matchLabel || `Match ${match.matchNumber || ''}`.trim(),
+                    team1: match.team1,
+                    team2: match.team2,
+                    battingRuns: row.battingRuns || 0,
+                    battingBalls: row.battingBalls || 0,
+                    wickets: row.wickets || 0,
+                    oversBowled: row.bowlingOvers || 0
+                });
+            });
+
+            return {
+                matches: log.length,
+                runs,
+                ballsFaced,
+                wickets,
+                oversBowled: Number(oversBowled.toFixed(1)),
+                log
+            };
+        }
+
         function syncLoggedInPlayerDashboard() {
             if (!state.loggedInPlayer) return;
             const p = getLoggedInPlayerRecord() || state.loggedInPlayer;
             const team = (p.team||'').trim();
+            const stats = getPlayerMatchStats(p);
             document.getElementById('profile-initial').innerText = p.name.charAt(0);
             document.getElementById('profile-name').innerText = formatName(p.name);
             document.getElementById('profile-role').innerText = p.role;
@@ -2116,8 +3921,15 @@
                 document.getElementById('profile-status-text').innerText = 'Awaiting Bid';
                 document.getElementById('profile-status-dot').className = 'w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse';
             }
+            document.getElementById('profile-matches').innerText = stats.matches;
+            document.getElementById('profile-runs').innerText = stats.runs;
+            document.getElementById('profile-balls-faced').innerText = stats.ballsFaced;
+            document.getElementById('profile-wickets').innerText = stats.wickets;
+            document.getElementById('profile-overs-bowled').innerText = stats.oversBowled.toFixed(1);
+            document.getElementById('profile-match-log').innerHTML = stats.log.length
+                ? stats.log.map(entry => `<div class="rounded-xl bg-slate-50 border border-slate-100 p-4"><div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2"><div><p class="text-[10px] uppercase tracking-widest text-cyan-600 font-black">${entry.matchLabel}</p><p class="font-black text-slate-900 mt-1">${entry.team1} vs ${entry.team2}</p></div><div class="text-sm text-slate-600">Runs ${entry.battingRuns} (${entry.battingBalls}) | Wkts ${entry.wickets} | Overs ${entry.oversBowled.toFixed(1)}</div></div></div>`).join('')
+                : '<p class="text-sm text-slate-400">Your match stats will appear here after your first saved match.</p>';
         }
-        
         function getLoggedInPlayerRecord() { return state.allPlayers.find(p => p.mobile == state.loggedInPlayer.mobile); }
         function switchInnerTab(g, t) { document.querySelectorAll(`[id^="content-${g}-"]`).forEach(e => e.classList.add('hide')); document.getElementById(`content-${g}-${t}`).classList.remove('hide'); }
         
@@ -2143,7 +3955,7 @@
                         <li class="flex items-center gap-3 bg-white border border-slate-100 p-2 rounded-md shadow-sm">
                             <span class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">${i+1}</span>
                             <div class="flex justify-between items-center w-full pr-2">
-                                <span class="font-bold text-slate-800">${p.name}</span>
+                                <span class="font-bold text-slate-800">${p.name} <span class="ml-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">${p.playerTag || 'Choice'}</span></span>
                                 <span class="font-black text-emerald-600 font-mono">$${p.price}</span>
                             </div>
                         </li>
@@ -2156,6 +3968,7 @@
         function showModal(t, c) { document.getElementById('modal-title').innerText = t; document.getElementById('modal-body').innerHTML = c; const m = document.getElementById('custom-modal'), b = document.getElementById('modal-content-box'); m.classList.remove('hide'); setTimeout(() => { b.classList.remove('scale-95', 'opacity-0'); }, 10); }
         function closeModal() { const m = document.getElementById('custom-modal'), b = document.getElementById('modal-content-box'); b.classList.add('scale-95', 'opacity-0'); setTimeout(() => m.classList.add('hide'), 300); }
 
+        // --- Navigation Logic ---
         function navigateTo(viewId) {
             toggleMobileMenu(false);
             document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
@@ -2164,11 +3977,16 @@
             window.scrollTo(0, 0);
 
             if (viewId === 'auction') { renderAuctionUI(); startTimerLoop(); } else { if(animationFrameId) cancelAnimationFrame(animationFrameId); }
+            if (viewId === 'league') renderLeagueTournamentStatus();
             if (viewId === 'teams') renderTeams();
-            if (viewId === 'stats' && !state.chartInitialized) renderChart();
+            if (viewId === 'live') renderPublicLiveUI();
+            if (viewId === 'stats') renderStatsDashboard();
             if (viewId === 'adminpanel') renderAdminPanel();
 
-            StorageUtil.set('localStorage', 'dpl_current_view', viewId);
+            // Save the view to localStorage so it stays across page refreshes!
+            try {
+                localStorage.setItem('dpl_current_view', viewId);
+            } catch(e) {}
         }
 
         function switchAdminTab(type) {
@@ -2189,7 +4007,7 @@
 
             if (team && state.teamPins[team] && state.teamPins[team] === pin) { 
                 state.userRole = `owner_${team}`; 
-                StorageUtil.set('sessionStorage', 'dpl_userRole', state.userRole);
+                sessionStorage.setItem('dpl_userRole', state.userRole); // Save to session
                 
                 if (!state.auction.loggedInOwners) state.auction.loggedInOwners = [];
                 if (!state.auction.loggedInOwners.includes(team)) {
@@ -2205,11 +4023,11 @@
 
         function handleAdminLogin(e) {
             e.preventDefault(); const user = document.getElementById('admin-username').value.toLowerCase(); const pass = document.getElementById('admin-password').value;
-            if (user === 'admin' && pass === '1609') { 
+            if (user === 'admin' && pass === '1010') { 
                 state.userRole = 'admin'; 
                 state.isAdmin = true; 
-                StorageUtil.set('sessionStorage', 'dpl_userRole', 'admin');
-                StorageUtil.set('sessionStorage', 'dpl_isAdmin', 'true');
+                sessionStorage.setItem('dpl_userRole', 'admin'); // Save to session
+                sessionStorage.setItem('dpl_isAdmin', 'true');   // Save to session
                 
                 showModal("Control Unlocked", `<div class='text-center py-4'><span class='text-5xl mb-4 block'>⚙️</span><h3 class='font-bold text-slate-800 text-xl'>Admin Mode Active</h3><p class='text-slate-500 mt-2'>You now control the auction flow.</p></div>`); 
                 navigateTo('adminpanel'); 
@@ -2228,8 +4046,9 @@
             state.isAdmin = false; 
             state.userRole = 'viewer'; 
             
-            StorageUtil.remove('sessionStorage', 'dpl_userRole');
-            StorageUtil.remove('sessionStorage', 'dpl_isAdmin');
+            // Clear sessions
+            sessionStorage.removeItem('dpl_userRole');
+            sessionStorage.removeItem('dpl_isAdmin');
             
             document.getElementById('admin-login-form')?.reset(); 
             navigateTo('admin'); 
@@ -2241,12 +4060,19 @@
             if (isOpen) { nav.classList.remove('translate-x-full'); document.body.style.overflow = 'hidden'; } else { nav.classList.add('translate-x-full'); document.body.style.overflow = ''; }
         }
 
-        // --- INIT ---
-        const lastView = StorageUtil.get('localStorage', 'dpl_current_view');
-        if (lastView && document.getElementById(`view-${lastView}`)) {
-            navigateTo(lastView);
-        }
+        // Restore the last active view if it exists in memory
+        try {
+            const lastView = localStorage.getItem('dpl_current_view');
+            if (lastView && document.getElementById(`view-${lastView}`)) {
+                navigateTo(lastView);
+            }
+        } catch(e) {}
 
+        // Init
+        hideLegacyLiveScoreCard();
+        renderPublicLiveUI();
+        renderStatsDashboard();
+        renderLeagueTournamentStatus();
         initFirebase();
     </script>
 </body>
