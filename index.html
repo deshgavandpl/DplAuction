@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>DPL Central | Professional Draft & League Operations</title>
 
     <!-- Tailwind CSS -->
@@ -1371,6 +1374,30 @@
         audioSold.preload = 'auto';
         audioUnsold.preload = 'auto';
         audioTic.preload = 'auto';
+
+        const AUTO_HARD_REFRESH_MS = 300000;
+        const AUTO_REFRESH_QUERY_KEY = 'dpl_refresh';
+        let autoRefreshTimerId = null;
+
+        function buildNoCacheUrl() {
+            const url = new URL(window.location.href);
+            url.searchParams.set(AUTO_REFRESH_QUERY_KEY, Date.now().toString());
+            return url.toString();
+        }
+
+        function performAutoHardRefresh() {
+            try {
+                sessionStorage.setItem('dpl_last_auto_refresh', Date.now().toString());
+            } catch (e) {}
+            window.location.replace(buildNoCacheUrl());
+        }
+
+        function startAutoHardRefreshCycle() {
+            if (autoRefreshTimerId) clearTimeout(autoRefreshTimerId);
+            autoRefreshTimerId = window.setTimeout(() => {
+                performAutoHardRefresh();
+            }, AUTO_HARD_REFRESH_MS);
+        }
 
         let lastAuctionStatus = 'waiting';
         let lastBidAmount = 0;
@@ -4114,6 +4141,7 @@
         renderPublicLiveUI();
         renderStatsDashboard();
         renderLeagueTournamentStatus();
+        startAutoHardRefreshCycle();
         initFirebase();
     </script>
 </body>
