@@ -413,7 +413,6 @@
                             <li class="flex items-start gap-3"><span class="text-blue-500 font-bold">3.</span><div><strong>Auction:</strong> All teams have an equal virtual purse. Base prices determined by committee.</div></li>
                         </ul>
                     </div>
-                    <div id="league-tournament-status" class="mt-8 p-5 rounded-2xl border border-slate-200 bg-slate-50"></div>
                 </div>
             </div>
         </div>
@@ -432,10 +431,10 @@
         <!-- ========================================== -->
         <div id="view-auction" class="app-view">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-6 gap-4">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-4 gap-4">
                 <div>
                     <h1 class="text-3xl sm:text-4xl font-black text-slate-900 italic transform -skew-x-6 uppercase tracking-tight flex items-center gap-3">🔴 Live Draft Desk</h1>
-                    <div class="flex items-center flex-wrap gap-3 mt-1">
+                    <div class="flex items-center flex-wrap gap-3 mt-2">
                         <p class="text-slate-500 font-medium tracking-wide" id="auction-user-status">View-Only Mode | Real-Time Sync Active</p>
                         <button id="btn-enable-audio" onclick="toggleAudio()" class="px-3 py-1 rounded-full bg-red-100 text-red-600 text-xs font-bold border border-red-200 hover:bg-red-200 transition-colors flex items-center gap-1 shadow-sm">
                             <span class="text-base">🔇</span> Enable Audio
@@ -443,17 +442,17 @@
                     </div>
                 </div>
                 <!-- Admin Override Controls (Hidden by Default) -->
-                <div id="auction-admin-controls" class="hide flex gap-2 flex-wrap justify-end">
+                <div id="auction-admin-controls" class="hide flex gap-2 flex-wrap justify-start lg:justify-end w-full lg:w-auto">
                     <button onclick="adminPrevPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">⏮ Prev</button>
                     <button onclick="adminNextPlayer()" class="btn-secondary py-2 px-4 text-slate-600 hover:text-slate-900 border-slate-200 hover:bg-slate-100 font-bold text-xs uppercase">Next ⏭</button>
                     <button onclick="adminToggleAuctionStage()" class="btn-primary py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase shadow-[0_0_15px_rgba(37,99,235,0.4)]">Bring to Block</button>
-                    <button onclick="adminGiveWarning()" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning (7s)</button>
+                    <button onclick="adminGiveWarning()" id="btn-admin-warning" class="btn-primary py-2 px-4 bg-amber-500 hover:bg-amber-600 text-white font-black italic uppercase text-xs shadow-lg shadow-amber-500/30">Give Final Warning</button>
                     <button onclick="adminLockAndSell()" id="btn-admin-sell" class="btn-primary py-2 px-4 bg-red-600 hover:bg-red-700 text-white font-black italic uppercase text-xs shadow-lg shadow-red-600/30">Lock & Sell</button>
                 </div>
             </div>
 
             <!-- THE CINEMATIC STAGE -->
-            <div class="auction-stage rounded-3xl p-5 sm:p-8 mb-8 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center min-h-[38vh]">
+            <div class="auction-stage rounded-3xl p-5 sm:p-7 mb-8 relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center justify-center min-h-[32vh] sm:min-h-[36vh]">
                 <div class="absolute inset-0 energy-grid opacity-20 pointer-events-none z-0"></div>
                 
                 <!-- SOLD STAMP ANIMATION -->
@@ -471,16 +470,16 @@
                     
                     <div class="absolute top-0 right-0 p-4 opacity-5 text-8xl md:text-[150px] pointer-events-none">👤</div>
 
-                    <div id="auction-status-badge" class="inline-block px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs sm:text-sm font-bold tracking-[0.2em] uppercase mb-4 sm:mb-6 transition-colors">
+                    <div id="auction-status-badge" class="inline-block px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-slate-300 text-xs sm:text-sm font-bold tracking-[0.2em] uppercase mb-4 transition-colors">
                         Player On Block
                     </div>
 
                     <!-- Player Name (Glitch effect applied on new load) -->
                     <h2 id="auction-player-name" class="text-3xl sm:text-5xl md:text-6xl font-black text-white tracking-tight mb-2 drop-shadow-2xl">---</h2>
-                    <p id="auction-player-role" class="text-base sm:text-xl font-bold text-blue-400 tracking-widest uppercase mb-6 sm:mb-8">---</p>
+                    <p id="auction-player-role" class="text-base sm:text-xl font-bold text-blue-400 tracking-widest uppercase mb-5 sm:mb-6">---</p>
 
                     <!-- Central Bid Display -->
-                    <div class="w-full max-w-lg mx-auto bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-700 p-6 sm:p-8 mb-8 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
+                    <div class="w-full max-w-lg mx-auto bg-slate-900/60 backdrop-blur-xl rounded-3xl border border-slate-700 p-6 sm:p-8 mb-6 relative overflow-hidden transition-all duration-300" id="auction-bid-card">
                         <div class="absolute inset-0 bg-gradient-to-t from-slate-800/30 to-transparent pointer-events-none"></div>
                         <p class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-1">Current Bid</p>
                         <div id="auction-current-bid" class="text-6xl sm:text-8xl font-black text-white tracking-tighter font-mono transition-colors duration-300 drop-shadow-lg">$20</div>
@@ -918,17 +917,17 @@
                 </div>
             </div>
 
-            <!-- DIRECTIVE 1: Override Player Assignments -->
+            <!-- DIRECTIVE 1: Registered Players / Unassigned Pool -->
             <div class="clean-card p-0 overflow-hidden mb-6 border-slate-200 shadow-lg" id="admin-override-section">
                 <div class="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-800 text-white">
                     <span class="text-xl">🔨</span>
                     <div>
-                        <h2 class="font-black uppercase tracking-wide text-base">Override Player Assignments</h2>
-                        <p class="text-blue-200 text-xs">Assign remaining pool players instantly without bidding.</p>
+                        <h2 class="font-black uppercase tracking-wide text-base">Registered Players / Unassigned Pool</h2>
+                        <p class="text-blue-200 text-xs">Review the pool, assign players manually, or remove unused entries.</p>
                     </div>
                 </div>
                 <div class="p-4 sm:p-6">
-                    <div class="grid md:grid-cols-3 gap-4 mb-6">
+                    <div class="hidden grid md:grid-cols-3 gap-4 mb-6">
                         <div class="md:col-span-1 bg-slate-900 rounded-2xl p-5 text-center flex flex-col gap-2 items-center justify-center">
                             <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Currently On Block</span>
                             <p id="ap-player-name" class="text-2xl font-black text-white italic transform -skew-x-6">---</p>
@@ -1114,10 +1113,29 @@
                     <span class="text-xl">➕</span>
                     <div>
                         <h2 class="font-black uppercase tracking-wide text-base">Admin Add Player</h2>
-                        <p class="text-emerald-100 text-xs">Add a player directly to a team and mark them as Icon or Choice.</p>
+                        <p class="text-emerald-100 text-xs">Add a player directly to the pool or a team, with Player, Icon, or Choice status.</p>
                     </div>
                 </div>
                 <div class="p-4 sm:p-6">
+                    <div class="grid md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Manual Assign Tag</label>
+                            <select id="admin-assign-tag" class="clean-input bg-slate-50">
+                                <option value="Player">Player</option>
+                                <option value="Choice">Choice</option>
+                                <option value="Icon">Icon</option>
+                            </select>
+                            <p class="text-[11px] text-slate-400 mt-2">Auction sales use <strong>Player</strong>. Use this only when admin assigns someone manually.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Final Warning Timer</label>
+                            <div class="flex items-center gap-3">
+                                <input type="number" id="admin-warning-seconds" min="7" max="30" step="1" class="clean-input bg-slate-50" value="30">
+                                <button onclick="adminUpdateWarningDuration()" class="px-5 py-3 rounded-xl bg-amber-500 text-white font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-colors">Save Timer</button>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-2">Allowed range: 7 to 30 seconds.</p>
+                        </div>
+                    </div>
                     <div class="grid md:grid-cols-3 gap-4">
                         <input type="text" id="admin-add-name" class="clean-input bg-slate-50" placeholder="Player name">
                         <input type="tel" id="admin-add-mobile" class="clean-input bg-slate-50" placeholder="Mobile">
@@ -1137,6 +1155,7 @@
                             <option value="Ankushraj11">Ankushraj11</option>
                         </select>
                         <select id="admin-add-tag" class="clean-input bg-slate-50">
+                            <option value="Player">Player</option>
                             <option value="Choice">Choice</option>
                             <option value="Icon">Icon</option>
                         </select>
@@ -1200,6 +1219,8 @@
                 currentBid: 20, 
                 highestBidder: null,
                 endTime: 0,
+                displayPlayer: null,
+                warningDurationMs: 30000,
                 passedTeams: [], 
                 isSessionActive: false, 
                 loggedInOwners: [] 
@@ -1425,6 +1446,8 @@
                         if (typeof newData.highestBidder === 'undefined') state.auction.highestBidder = null;
                         if (typeof newData.passedTeams === 'undefined') state.auction.passedTeams = [];
                         if (typeof newData.loggedInOwners === 'undefined') state.auction.loggedInOwners = [];
+                        if (typeof newData.displayPlayer === 'undefined') state.auction.displayPlayer = null;
+                        if (typeof newData.warningDurationMs === 'undefined') state.auction.warningDurationMs = 30000;
 
                         // KICK OWNERS & SHOW POPUP WHEN SESSION STOPS
                         if (wasActive === true && state.auction.isSessionActive === false) {
@@ -1619,7 +1642,7 @@
                     state.unassigned.push({ name: formattedName, role: p.role, price: `$${priceVal}`, mobile: p.mobile || '', team: 'Unassigned' });
                 } else if (state.teams[teamName] !== undefined) {
                     // STORE AS OBJECT TO KEEP BOTH NAME AND SOLD VALUE
-                    state.teams[teamName].push({ name: formattedName, price: priceVal, playerTag: p.playerTag || 'Choice' });
+                    state.teams[teamName].push({ name: formattedName, price: priceVal, playerTag: p.playerTag || 'Player' });
                     state.teamSpent[teamName] += priceVal;
                 }
             });
@@ -1633,11 +1656,17 @@
             syncLoggedInPlayerDashboard();
         }
 
-        async function assignPlayerToTeam(player, teamName, price = null) {
+        function getWarningDurationMs() {
+            const raw = parseInt(state.auction.warningDurationMs, 10);
+            if (Number.isNaN(raw)) return 30000;
+            return Math.min(30000, Math.max(7000, raw));
+        }
+
+        async function assignPlayerToTeam(player, teamName, price = null, playerTag = 'Player') {
             if (!isFirebaseReady || !update) return { status: 'error', message: 'Database not ready.' };
             const pRef = ref(db, `artifacts/${appId}/public/data/players/${player.mobile}`);
             const priceVal = price ? parseInt(price.toString().replace(/[^0-9]/g, '')) : 20;
-            await update(pRef, { team: teamName, price: priceVal });
+            await update(pRef, { team: teamName, price: priceVal, playerTag });
             return { status: 'success' };
         }
 
@@ -1684,7 +1713,7 @@
                     
                     if (text) text.innerText = `${seconds}s`;
                     if (bar) {
-                        const percentage = (remaining / 7000) * 100; // Warning is 7 seconds
+                        const percentage = (remaining / getWarningDurationMs()) * 100;
                         bar.style.width = `${percentage}%`;
                     }
                 } else {
@@ -1713,6 +1742,8 @@
             state.auction.status = 'active';
             state.auction.currentBid = 20;
             state.auction.highestBidder = null;
+            state.auction.endTime = 0;
+            state.auction.displayPlayer = null;
             state.auction.passedTeams = []; 
             
             saveAuctionState();
@@ -1723,16 +1754,35 @@
         function adminGiveWarning() {
             if (state.auction.status !== 'active' && state.auction.status !== 'warning') return;
             state.auction.status = 'warning';
-            state.auction.endTime = Date.now() + 7000; // 7 Seconds Warning Timer
+            state.auction.endTime = Date.now() + getWarningDurationMs();
             saveAuctionState();
             renderAuctionUI();
         }
 
         function adminResetCurrentAuction() {
             state.auction.status = 'waiting';
+            state.auction.currentBid = 20;
+            state.auction.highestBidder = null;
+            state.auction.endTime = 0;
+            state.auction.displayPlayer = null;
             state.auction.passedTeams = [];
             saveAuctionState();
+            renderAdminPanel();
             renderAuctionUI();
+        }
+
+        function adminUpdateWarningDuration() {
+            const input = document.getElementById('admin-warning-seconds');
+            const seconds = parseInt(input?.value, 10);
+            if (Number.isNaN(seconds) || seconds < 7 || seconds > 30) {
+                showModal('Invalid Timer', 'Final warning timer must be between 7 and 30 seconds.');
+                return;
+            }
+            state.auction.warningDurationMs = seconds * 1000;
+            saveAuctionState();
+            renderAdminPanel();
+            renderAuctionUI();
+            showModal('Timer Updated', `Final warning timer is now ${seconds} seconds.`);
         }
 
         function ownerPassBid(teamName) {
@@ -1786,38 +1836,19 @@
             
             const team = state.auction.highestBidder;
             const player = state.unassigned[state.auction.playerIdx];
+            state.auction.displayPlayer = player ? { ...player } : null;
 
             if (team && player) {
                 try {
-                    await assignPlayerToTeam(player, team, state.auction.currentBid);
+                    await assignPlayerToTeam(player, team, state.auction.currentBid, 'Player');
                 } catch (e) {
                     console.error("Backend assign error:", e);
                 }
-            } else {
-                console.log("Player Unsold/Passed");
-                if (state.auction.playerIdx < state.unassigned.length - 1) {
-                    state.auction.playerIdx++;
-                } else {
-                    state.auction.playerIdx = 0; // Wrap to start if they pass the last player
-                }
             }
 
+            state.auction.endTime = 0;
             saveAuctionState();
             renderAuctionUI();
-
-            setTimeout(() => {
-                if(state.auction.status === 'sold' && state.userRole === 'admin') {
-                    state.auction.status = 'waiting';
-                    state.auction.currentBid = 20;
-                    state.auction.highestBidder = null;
-                    state.auction.passedTeams = [];
-                    if (state.auction.playerIdx >= state.unassigned.length) {
-                        state.auction.playerIdx = Math.max(0, state.unassigned.length - 1);
-                    }
-                    saveAuctionState();
-                    renderAuctionUI();
-                }
-            }, 4500); 
         }
 
         // --- 4. Render Logic ---
@@ -1834,7 +1865,8 @@
                 const count = state.teams[team].length;
                 const roster = getPlayersByTeam(team);
                 const iconCount = roster.filter(player => (player.playerTag || '').toLowerCase() === 'icon').length;
-                const choiceCount = Math.max(roster.length - iconCount, 0);
+                const choiceCount = roster.filter(player => (player.playerTag || '').toLowerCase() === 'choice').length;
+                const playerCount = roster.filter(player => (player.playerTag || 'Player').toLowerCase() === 'player').length;
                 const details = teamConfig[team] || { owner: 'Unknown', grad: 'from-slate-500 to-slate-700' };
                 const teamImage = teamImages[team];
                 const teamImageClass = teamImageClasses[team] || '';
@@ -1850,11 +1882,12 @@
                                     ${details.owner}
                                 </span>
                             </div>
-                            <div class="mt-3 flex flex-wrap gap-2">
+                            <div class="mt-4 flex flex-wrap gap-2">
                                 <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Icon ${iconCount}</span>
                                 <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Choice ${choiceCount}</span>
+                                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-1 rounded-full">Player ${playerCount}</span>
                             </div>
-                            <p class="text-xs font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1.5 rounded-md border border-slate-200">
+                            <p class="hidden text-xs font-bold text-slate-600 bg-slate-100 inline-block px-3 py-1.5 rounded-md border border-slate-200">
                                 🏏 ${count} Players Drafted
                             </p>
                         </div>
@@ -1873,7 +1906,10 @@
             const stamp = document.getElementById('auction-sold-stamp');
             const timerWrapper = document.getElementById('auction-timer-wrapper');
             const statusBadge = document.getElementById('auction-status-badge');
+            const warningBtn = document.getElementById('btn-admin-warning');
             if(!uiWait || !uiActive || !stamp) return;
+
+            if (warningBtn) warningBtn.innerText = `Give Final Warning (${Math.round(getWarningDurationMs() / 1000)}s)`;
 
             if (state.auction.status === 'sold' && lastAuctionStatus !== 'sold') {
                 if (isAudioEnabled) {
@@ -1919,7 +1955,9 @@
                 uiWait.classList.add('hide');
                 uiActive.classList.remove('hide');
                 
-                const p = state.unassigned[state.auction.playerIdx];
+                const p = state.auction.status === 'sold'
+                    ? (state.auction.displayPlayer || state.unassigned[state.auction.playerIdx])
+                    : state.unassigned[state.auction.playerIdx];
                 if (p) {
                     const nameEl = document.getElementById('auction-player-name');
                     nameEl.innerText = p.name;
@@ -2154,6 +2192,7 @@
 
             const btnToggle = document.getElementById('btn-toggle-session');
             const statusText = document.getElementById('session-status-text');
+            const warningInput = document.getElementById('admin-warning-seconds');
             if(btnToggle && statusText) {
                 if(state.auction.isSessionActive) {
                     btnToggle.innerText = "Deactivate Session";
@@ -2165,8 +2204,11 @@
                     statusText.innerHTML = "<span class='text-slate-500 text-sm'>Currently: OFFLINE (Logins blocked)</span>";
                 }
             }
+            if (warningInput) warningInput.value = Math.round(getWarningDurationMs() / 1000);
 
-            const p = state.unassigned[state.auction.playerIdx];
+            const p = state.auction.status === 'sold'
+                ? (state.auction.displayPlayer || state.unassigned[state.auction.playerIdx])
+                : state.unassigned[state.auction.playerIdx];
             const apName = document.getElementById('ap-player-name');
             if (apName && p) {
                 apName.innerText = p.name;
@@ -2256,8 +2298,7 @@
             if (state.unassigned.length === 0) return;
             if (state.auction.playerIdx < state.unassigned.length - 1) {
                 state.auction.playerIdx++;
-                state.auction.status = 'waiting';
-                saveAuctionState();
+                adminResetCurrentAuction();
                 renderAdminPanel();
                 renderAuctionUI();
             } else {
@@ -2269,8 +2310,7 @@
             if (state.unassigned.length === 0) return;
             if (state.auction.playerIdx > 0) {
                 state.auction.playerIdx--;
-                state.auction.status = 'waiting';
-                saveAuctionState();
+                adminResetCurrentAuction();
                 renderAdminPanel();
                 renderAuctionUI();
             } else {
@@ -2282,10 +2322,11 @@
             const player = state.unassigned[index];
             if (!player) return;
             try {
-                const result = await assignPlayerToTeam(player, teamName, '20');
+                const playerTag = document.getElementById('admin-assign-tag')?.value || 'Player';
+                const result = await assignPlayerToTeam(player, teamName, '20', playerTag);
                 if (result.status !== 'success') throw new Error(result.message || 'Assignment failed.');
                 
-                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Forced into <span class='font-bold text-blue-600'>${teamName}</span></p></div>`);
+                showModal('✅ Assigned!', `<div class='text-center py-2'><p class='font-bold text-slate-800 text-lg'>${player.name}</p><p class='text-slate-500 mt-1'>Sent to <span class='font-bold text-blue-600'>${teamName}</span> as <span class='font-bold text-emerald-600'>${playerTag}</span>.</p></div>`);
             } catch (error) {
                 showModal('Error', `<p class='text-center'>${error.message}</p>`);
             }
@@ -2365,7 +2406,7 @@
                 const pin = (document.getElementById('admin-add-pin')?.value || '').trim();
                 const role = document.getElementById('admin-add-role')?.value || 'Batsman';
                 const team = document.getElementById('admin-add-team')?.value || 'Unassigned';
-                const playerTag = document.getElementById('admin-add-tag')?.value || 'Choice';
+                const playerTag = document.getElementById('admin-add-tag')?.value || 'Player';
                 if (!name || !mobile || !pin || pin.length !== 4) return showModal('Add Player Error', 'Enter name, mobile, and a 4-digit PIN.');
                 const playerRef = ref(db, `artifacts/${appId}/public/data/players/${mobile}`);
                 const snapshot = await get(playerRef);
@@ -3819,7 +3860,7 @@
                 if (snapshot.exists()) {
                     showModal("Error", "Mobile number is already registered.");
                 } else {
-                    await set(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20, playerTag: 'Choice' });
+                    await set(playerRef, { name, mobile, role, pin, team: 'Unassigned', price: 20, playerTag: 'Player' });
                     switchInnerTab('hub', 'selection'); 
                     showModal("Success", "<p class='text-center'>Registered! You can now login.</p>"); 
                     e.target.reset();
@@ -3955,7 +3996,7 @@
                         <li class="flex items-center gap-3 bg-white border border-slate-100 p-2 rounded-md shadow-sm">
                             <span class="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">${i+1}</span>
                             <div class="flex justify-between items-center w-full pr-2">
-                                <span class="font-bold text-slate-800">${p.name} <span class="ml-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">${p.playerTag || 'Choice'}</span></span>
+                                <span class="font-bold text-slate-800">${p.name} <span class="ml-2 text-[10px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-full">${p.playerTag || 'Player'}</span></span>
                                 <span class="font-black text-emerald-600 font-mono">$${p.price}</span>
                             </div>
                         </li>
