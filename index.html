@@ -23,15 +23,16 @@
     <script>
         (function() {
             try {
-                const savedView = localStorage.getItem('dpl_current_view');
-                if (savedView && savedView !== 'intro') {
+                const params = new URLSearchParams(window.location.search);
+                const requestedView = params.get('view');
+                if (requestedView && requestedView !== 'intro') {
                     document.documentElement.style.visibility = 'hidden';
                     window.addEventListener('DOMContentLoaded', () => {
                         document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
-                        const target = document.getElementById('view-' + savedView);
+                        const target = document.getElementById('view-' + requestedView);
                         if(target) target.classList.add('active-view');
                         document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => {
-                            if (el.dataset.target === savedView) el.classList.add('active');
+                            if (el.dataset.target === requestedView) el.classList.add('active');
                             else el.classList.remove('active');
                         });
                         document.documentElement.style.visibility = '';
@@ -121,7 +122,7 @@
             position: relative; color: #64748b; font-weight: 800; text-transform: uppercase; letter-spacing: 0.15em; transition: all 0.2s ease; transform: skewX(-10deg); background-color: transparent; border: 1px solid transparent; display: flex; align-items: center; justify-content: center; border-radius: 0.25rem; cursor: pointer;
         }
         .nav-link > span, .mobile-nav-link > span, .tab-btn > span { display: inline-flex; align-items: center; gap: 0.35rem; transform: skewX(10deg); }
-        .nav-link { padding: 0.35rem 1rem; font-size: 0.7rem; }
+        .nav-link { min-height: 2.25rem; min-width: 5.8rem; padding: 0.35rem 1rem; font-size: 0.7rem; }
         .nav-link:hover:not(.active) { background-color: #f1f5f9; color: #0f172a; border-color: #e2e8f0; }
         .mobile-nav-link { padding: 1rem 2rem; font-size: 1.25rem; margin-bottom: 1rem; width: 80%; border-radius: 0.5rem; }
         .mobile-nav-link:hover:not(.active) { background-color: rgba(255, 255, 255, 0.05); color: #00e5ff; }
@@ -179,12 +180,30 @@
             object-fit: contain;
             filter: drop-shadow(0 16px 28px rgba(15, 23, 42, 0.22));
         }
+        .intro-hero-badge {
+            min-width: 11rem;
+            justify-content: center;
+            text-align: center;
+        }
+        .intro-hero-cta {
+            min-width: 11rem;
+            justify-content: center;
+        }
+        .intro-kid-wrap {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
         .intro-kid-image {
-            width: min(100%, 31rem);
+            width: min(100%, 22rem);
+            max-height: min(35rem, 70vh);
+            height: auto;
             object-fit: contain;
             object-position: center bottom;
-            transform: translate(-1.25rem, -0.75rem);
-            filter: drop-shadow(0 20px 30px rgba(15, 23, 42, 0.22));
+            transform: none;
+            filter: drop-shadow(0 24px 34px rgba(15, 23, 42, 0.24));
         }
         .intro-info-card {
             width: 100%;
@@ -239,7 +258,8 @@
         }
         @media (max-width: 767px) {
             .intro-ring { width: min(18rem, 80vw); }
-            .intro-kid-image { width: min(22rem, 82vw); }
+            .intro-hero-badge, .intro-hero-cta { min-width: 0; width: 100%; }
+            .intro-kid-image { width: min(19rem, 78vw); max-height: none; }
         }
         
         .energy-grid { background-size: 50px 50px; background-image: linear-gradient(to right, rgba(0, 229, 255, 0.08) 1px, transparent 1px), linear-gradient(to bottom, rgba(0, 229, 255, 0.08) 1px, transparent 1px); }
@@ -367,7 +387,7 @@
     <nav class="sticky top-0 w-full bg-white/90 backdrop-blur-md border-b border-slate-200 z-50 px-4 md:px-6 py-3 shadow-sm">
         <div class="max-w-[1400px] mx-auto flex justify-between items-center">
             <!-- GEN-Z LOGO -->
-            <div class="relative cursor-pointer flex items-center gap-3 group" onclick="navigateTo('intro')">
+            <a href="?" onclick="handleNavLinkClick(event, 'intro')" class="relative cursor-pointer flex items-center gap-3 group">
                 <div class="relative w-10 h-10 flex items-center justify-center transform group-hover:scale-105 transition-all duration-300">
                     <div class="absolute -inset-0.5 bg-gradient-to-r from-[#D4AF37] to-blue-600 opacity-60 blur group-hover:opacity-100 transition-opacity duration-300"></div>
                     <div class="relative w-full h-full bg-[#0a192f] border border-[#D4AF37]/50 flex items-center justify-center shadow-inner">
@@ -378,19 +398,19 @@
                     <span class="text-2xl md:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 uppercase tracking-tighter leading-none">Apna</span>
                     <span class="bg-gradient-to-r from-blue-600 to-blue-800 text-white text-[0.65rem] font-bold px-2 py-0.5 uppercase tracking-widest leading-none shadow-sm shadow-blue-500/30 rounded-sm">cricket</span>
                 </div>
-            </div>
+            </a>
 
             <!-- Desktop Nav -->
             <div class="hidden lg:flex items-center gap-1.5">
-                <button onclick="navigateTo('home')" class="nav-link active" data-target="home"><span>Home</span></button>
-                <button onclick="navigateTo('league')" class="nav-link" data-target="league"><span>League</span></button>
-                <button onclick="navigateTo('teams')" class="nav-link" data-target="teams"><span>Teams</span></button>
-                <button onclick="navigateTo('auction')" class="nav-link" data-target="auction"><span>Live Bidding</span></button>
-                <button onclick="navigateTo('live')" class="nav-link" data-target="live"><span><span class="live-dot w-2 h-2"></span> Live</span></button>
-                <button onclick="navigateTo('stats')" class="nav-link" data-target="stats"><span>Stats</span></button>
-                <button onclick="navigateTo('media')" class="nav-link" data-target="media"><span>Media</span></button>
-                <button onclick="navigateTo('hub')" class="nav-link" data-target="hub"><span>Hub</span></button>
-                <button onclick="navigateTo('whoweare')" class="nav-link" data-target="whoweare"><span>Who We Are</span></button>
+                <a href="?view=home" onclick="handleNavLinkClick(event, 'home')" class="nav-link active" data-target="home"><span>Home</span></a>
+                <a href="?view=league" onclick="handleNavLinkClick(event, 'league')" class="nav-link" data-target="league"><span>League</span></a>
+                <a href="?view=teams" onclick="handleNavLinkClick(event, 'teams')" class="nav-link" data-target="teams"><span>Teams</span></a>
+                <a href="?view=auction" onclick="handleNavLinkClick(event, 'auction')" class="nav-link" data-target="auction"><span>Live Bidding</span></a>
+                <a href="?view=live" onclick="handleNavLinkClick(event, 'live')" class="nav-link" data-target="live"><span><span class="live-dot w-2 h-2"></span> Live</span></a>
+                <a href="?view=stats" onclick="handleNavLinkClick(event, 'stats')" class="nav-link" data-target="stats"><span>Stats</span></a>
+                <a href="?view=media" onclick="handleNavLinkClick(event, 'media')" class="nav-link" data-target="media"><span>Media</span></a>
+                <a href="?view=hub" onclick="handleNavLinkClick(event, 'hub')" class="nav-link" data-target="hub"><span>Hub</span></a>
+                <a href="?view=whoweare" onclick="handleNavLinkClick(event, 'whoweare')" class="nav-link" data-target="whoweare"><span>Who We Are</span></a>
             </div>
 
             <button onclick="navigateTo('admin')" class="hidden md:flex btn-secondary px-5 py-2 text-xs text-slate-600 rounded-lg font-black uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 transform -skew-x-6"><span class="mr-1 inline-block transform skew-x-6">🔒 Portals</span></button>
@@ -406,15 +426,15 @@
     <div id="mobile-nav" class="fixed inset-0 bg-[#0a192f]/98 backdrop-blur-xl z-[100] transform translate-x-full transition-transform duration-300 flex flex-col items-center justify-center lg:hidden">
         <button onclick="toggleMobileMenu()" class="absolute top-6 right-6 text-white/70 hover:text-[#00e5ff] p-2 transition-colors"><svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
         <div class="flex flex-col gap-4 text-center w-full px-6 overflow-y-auto max-h-screen py-20 items-center">
-            <button onclick="navigateTo('home')" class="mobile-nav-link active" data-target="home"><span>Home</span></button>
-            <button onclick="navigateTo('league')" class="mobile-nav-link" data-target="league"><span>League</span></button>
-            <button onclick="navigateTo('teams')" class="mobile-nav-link" data-target="teams"><span>Teams</span></button>
-            <button onclick="navigateTo('auction')" class="mobile-nav-link" data-target="auction"><span>Live Bidding</span></button>
-            <button onclick="navigateTo('live')" class="mobile-nav-link" data-target="live"><span><span class="live-dot w-3 h-3"></span> Live Score</span></button>
-            <button onclick="navigateTo('stats')" class="mobile-nav-link" data-target="stats"><span>Stats</span></button>
-            <button onclick="navigateTo('media')" class="mobile-nav-link" data-target="media"><span>Media</span></button>
-            <button onclick="navigateTo('hub')" class="mobile-nav-link" data-target="hub"><span>Player Hub</span></button>
-            <button onclick="navigateTo('whoweare')" class="mobile-nav-link" data-target="whoweare"><span>Who We Are</span></button>
+            <a href="?view=home" onclick="handleNavLinkClick(event, 'home')" class="mobile-nav-link active" data-target="home"><span>Home</span></a>
+            <a href="?view=league" onclick="handleNavLinkClick(event, 'league')" class="mobile-nav-link" data-target="league"><span>League</span></a>
+            <a href="?view=teams" onclick="handleNavLinkClick(event, 'teams')" class="mobile-nav-link" data-target="teams"><span>Teams</span></a>
+            <a href="?view=auction" onclick="handleNavLinkClick(event, 'auction')" class="mobile-nav-link" data-target="auction"><span>Live Bidding</span></a>
+            <a href="?view=live" onclick="handleNavLinkClick(event, 'live')" class="mobile-nav-link" data-target="live"><span><span class="live-dot w-3 h-3"></span> Live Score</span></a>
+            <a href="?view=stats" onclick="handleNavLinkClick(event, 'stats')" class="mobile-nav-link" data-target="stats"><span>Stats</span></a>
+            <a href="?view=media" onclick="handleNavLinkClick(event, 'media')" class="mobile-nav-link" data-target="media"><span>Media</span></a>
+            <a href="?view=hub" onclick="handleNavLinkClick(event, 'hub')" class="mobile-nav-link" data-target="hub"><span>Player Hub</span></a>
+            <a href="?view=whoweare" onclick="handleNavLinkClick(event, 'whoweare')" class="mobile-nav-link" data-target="whoweare"><span>Who We Are</span></a>
             <div class="h-px w-1/2 mx-auto bg-slate-800 my-4"></div>
             <button onclick="navigateTo('admin')" class="w-4/5 mx-auto py-3.5 rounded-lg bg-red-600/10 border border-red-500/30 text-xl font-black text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"><span class="inline-block transform skew-x-6">🔒 Portals</span></button>
         </div>
@@ -428,9 +448,9 @@
         <!-- ========================================== -->
         <div id="view-intro" class="app-view active-view">
             <div class="clean-card intro-hero mb-8 min-h-[78vh] lg:min-h-[calc(100vh-120px)] !border-0 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.18)]">
-                <div class="relative z-10 grid lg:grid-cols-[1.05fr_1fr_0.8fr] gap-10 items-center px-6 py-10 sm:px-8 md:px-12 lg:px-16 lg:py-14 min-h-[78vh] lg:min-h-[calc(100vh-120px)]">
+                <div class="relative z-10 grid lg:grid-cols-[1.05fr_1fr_0.92fr] gap-8 lg:gap-10 items-center px-6 py-10 sm:px-8 md:px-12 lg:px-16 lg:py-14 min-h-[78vh] lg:min-h-[calc(100vh-120px)]">
                     <div class="text-white max-w-xl">
-                        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950/25 border border-white/10 text-[11px] font-black uppercase tracking-[0.22em] mb-8">
+                        <div class="intro-hero-badge inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-950/25 border border-white/10 text-[11px] font-black uppercase tracking-[0.22em] mb-8">
                             <span class="w-2.5 h-2.5 rounded-full bg-[#D4AF37] shadow-[0_0_12px_rgba(212,175,55,0.65)]"></span>
                             High-Voltage
                         </div>
@@ -440,10 +460,10 @@
                         </h1>
                         <p class="mt-5 text-xl sm:text-2xl text-white/85 font-semibold">No. 1 Portal of TENNIS CRICKET</p>
                         <div class="mt-10 flex flex-col sm:flex-row gap-4">
-                            <button onclick="navigateTo('home')" class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white text-emerald-900 font-black uppercase tracking-wider shadow-lg hover:bg-emerald-50 transition-all">
+                            <button onclick="navigateTo('home')" class="intro-hero-cta w-full sm:w-auto px-7 py-4 rounded-2xl bg-white text-emerald-900 font-black uppercase tracking-wider shadow-lg hover:bg-emerald-50 transition-all">
                                 Enter Home
                             </button>
-                            <button onclick="navigateTo('auction')" class="w-full sm:w-auto px-7 py-4 rounded-2xl border border-white/20 bg-white/10 text-white font-black uppercase tracking-wider hover:bg-white/15 transition-all">
+                            <button onclick="navigateTo('auction')" class="intro-hero-cta w-full sm:w-auto px-7 py-4 rounded-2xl border border-white/20 bg-white/10 text-white font-black uppercase tracking-wider hover:bg-white/15 transition-all">
                                 Watch Live
                             </button>
                         </div>
@@ -464,7 +484,9 @@
                     </div>
 
                     <div class="relative flex items-end justify-center lg:justify-end h-full">
-                        <img src="kittu.png" alt="Kids Cricket Pose" class="intro-kid-image relative z-10">
+                        <div class="intro-kid-wrap lg:justify-end">
+                            <img src="kittu.png" alt="Kids Cricket Pose" class="intro-kid-image relative z-10">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1049,7 +1071,7 @@
                                 <p class="mt-2 text-sm font-semibold text-emerald-700">Short vision: every local cricketer deserves a big chance.</p>
                             </div>
                             <div class="flex flex-wrap gap-3">
-                                <a href="mailto:hello@apnacricket.co.in?subject=Message%20for%20Founder" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-emerald-700">Message Founder</a>
+                                <a href="mailto:info@apnacricket.co.in?subject=Message%20for%20Founder" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-emerald-700">Message Founder</a>
                                 <a href="mailto:hello@apnacricket.co.in?subject=Message%20for%20CEO" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-slate-800">Message CEO</a>
                                 <a href="https://apnacricket.co.in" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-700 transition hover:bg-slate-50">Visit Site</a>
                             </div>
@@ -4602,12 +4624,30 @@
         function closeModal() { activeAuctionRoleFilter = null; const m = document.getElementById('custom-modal'), b = document.getElementById('modal-content-box'); b.classList.add('scale-95', 'opacity-0'); setTimeout(() => m.classList.add('hide'), 300); }
 
         // --- Navigation Logic ---
+        function buildViewUrl(viewId) {
+            return viewId === 'intro' ? `${window.location.pathname}${window.location.hash || ''}` : `${window.location.pathname}?view=${encodeURIComponent(viewId)}${window.location.hash || ''}`;
+        }
+
+        function handleNavLinkClick(event, viewId) {
+            if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            navigateTo(viewId);
+        }
+
+        function getInitialView() {
+            const params = new URLSearchParams(window.location.search);
+            const requestedView = params.get('view');
+            if (requestedView && document.getElementById(`view-${requestedView}`)) return requestedView;
+            return 'intro';
+        }
+
         function navigateTo(viewId) {
             toggleMobileMenu(false);
             document.querySelectorAll('.app-view').forEach(el => el.classList.remove('active-view'));
             document.getElementById(`view-${viewId}`).classList.add('active-view');
             document.querySelectorAll('.nav-link, .mobile-nav-link').forEach(el => { if (el.dataset.target === viewId) el.classList.add('active'); else el.classList.remove('active'); });
             window.scrollTo(0, 0);
+            window.history.replaceState({}, '', buildViewUrl(viewId));
 
             if (viewId === 'auction') { renderAuctionUI(); startTimerLoop(); } else { if(animationFrameId) cancelAnimationFrame(animationFrameId); }
             if (viewId === 'league') renderLeagueTournamentStatus();
@@ -4615,11 +4655,6 @@
             if (viewId === 'live') renderPublicLiveUI();
             if (viewId === 'stats') renderStatsDashboard();
             if (viewId === 'adminpanel') renderAdminPanel();
-
-            // Save the view to localStorage so it stays across page refreshes!
-            try {
-                localStorage.setItem('dpl_current_view', viewId);
-            } catch(e) {}
         }
 
         function switchAdminTab(type) {
@@ -4693,13 +4728,7 @@
             if (isOpen) { nav.classList.remove('translate-x-full'); document.body.style.overflow = 'hidden'; } else { nav.classList.add('translate-x-full'); document.body.style.overflow = ''; }
         }
 
-        // Restore the last active view if it exists in memory
-        try {
-            const lastView = localStorage.getItem('dpl_current_view');
-            if (lastView && document.getElementById(`view-${lastView}`)) {
-                navigateTo(lastView);
-            }
-        } catch(e) {}
+        navigateTo(getInitialView());
 
         // Init
         hideLegacyLiveScoreCard();
