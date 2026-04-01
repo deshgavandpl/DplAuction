@@ -186,6 +186,50 @@
             transform: translate(-1.25rem, -0.75rem);
             filter: drop-shadow(0 20px 30px rgba(15, 23, 42, 0.22));
         }
+        .intro-info-card {
+            width: 100%;
+            background: #ffffff;
+            border-radius: 1.75rem;
+            padding: 1.4rem;
+            color: #0f172a;
+            box-shadow: 0 22px 45px rgba(15, 23, 42, 0.16);
+            border: 1px solid #e2e8f0;
+        }
+        .intro-info-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.8rem;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 0.72rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 0.14em;
+        }
+        .intro-feature-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.55rem 0.85rem;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #334155;
+        }
+        .intro-info-grid {
+            display: grid;
+            grid-template-columns: 1.15fr 0.85fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+        @media (max-width: 900px) {
+            .intro-info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
         .intro-divider {
             width: 100%;
             height: 2px;
@@ -346,6 +390,7 @@
                 <button onclick="navigateTo('stats')" class="nav-link" data-target="stats"><span>Stats</span></button>
                 <button onclick="navigateTo('media')" class="nav-link" data-target="media"><span>Media</span></button>
                 <button onclick="navigateTo('hub')" class="nav-link" data-target="hub"><span>Hub</span></button>
+                <button onclick="navigateTo('whoweare')" class="nav-link" data-target="whoweare"><span>Who We Are</span></button>
             </div>
 
             <button onclick="navigateTo('admin')" class="hidden md:flex btn-secondary px-5 py-2 text-xs text-slate-600 rounded-lg font-black uppercase tracking-widest hover:bg-red-500 hover:text-white hover:border-red-500 transition-all duration-300 transform -skew-x-6"><span class="mr-1 inline-block transform skew-x-6">🔒 Portals</span></button>
@@ -369,6 +414,7 @@
             <button onclick="navigateTo('stats')" class="mobile-nav-link" data-target="stats"><span>Stats</span></button>
             <button onclick="navigateTo('media')" class="mobile-nav-link" data-target="media"><span>Media</span></button>
             <button onclick="navigateTo('hub')" class="mobile-nav-link" data-target="hub"><span>Player Hub</span></button>
+            <button onclick="navigateTo('whoweare')" class="mobile-nav-link" data-target="whoweare"><span>Who We Are</span></button>
             <div class="h-px w-1/2 mx-auto bg-slate-800 my-4"></div>
             <button onclick="navigateTo('admin')" class="w-4/5 mx-auto py-3.5 rounded-lg bg-red-600/10 border border-red-500/30 text-xl font-black text-red-500 uppercase tracking-widest hover:bg-red-600 hover:text-white transition-all transform -skew-x-6"><span class="inline-block transform skew-x-6">🔒 Portals</span></button>
         </div>
@@ -419,6 +465,37 @@
 
                     <div class="relative flex items-end justify-center lg:justify-end h-full">
                         <img src="kittu.png" alt="Kids Cricket Pose" class="intro-kid-image relative z-10">
+                    </div>
+                </div>
+            </div>
+
+            <div class="intro-info-card mb-8">
+                <div class="intro-info-grid">
+                    <div>
+                        <span class="intro-info-chip">Welcome to Apna Cricket</span>
+                        <h2 class="mt-4 text-3xl sm:text-4xl font-black leading-tight text-slate-950">Gully to village cricket, now online.</h2>
+                        <p class="mt-3 max-w-2xl text-sm sm:text-base leading-7 text-slate-600">A free platform for tennis cricket leagues, local stars, and small tournaments to run smoother and get seen faster.</p>
+                        <div class="mt-6 flex flex-wrap gap-2">
+                            <span class="intro-feature-pill">Free player profile</span>
+                            <span class="intro-feature-pill">Tournament setup</span>
+                            <span class="intro-feature-pill">Auction system</span>
+                            <span class="intro-feature-pill">Live match score</span>
+                            <span class="intro-feature-pill">Performance stats</span>
+                            <span class="intro-feature-pill">Nearby player find</span>
+                        </div>
+                    </div>
+                    <div class="grid gap-4">
+                        <div class="rounded-[1.5rem] bg-slate-50 p-5">
+                            <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Why Apna Cricket</p>
+                            <p class="mt-2 text-base font-semibold leading-7 text-slate-700">100% free, rural-first, super easy. No chaos. Just pure cricket vibes.</p>
+                        </div>
+                        <div class="rounded-[1.5rem] bg-emerald-50 p-5">
+                            <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Vision</p>
+                            <p class="mt-2 text-base font-semibold leading-7 text-emerald-950">Give every local player real spotlight, from village ground to bigger chance.</p>
+                        </div>
+                        <a href="https://apnacricket.co.in" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-5 py-4 text-sm font-black uppercase tracking-[0.14em] text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-700">
+                            Visit apnacricket.co.in
+                        </a>
                     </div>
                 </div>
             </div>
@@ -939,6 +1016,78 @@
                                 </div>
                                 <div id="profile-match-log" class="space-y-3"></div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- VIEW: WHO WE ARE                           -->
+        <!-- ========================================== -->
+        <div id="view-whoweare" class="app-view">
+            <div class="clean-card overflow-hidden bg-white shadow-2xl border-slate-200">
+                <div class="grid lg:grid-cols-[0.95fr_1.05fr] gap-0">
+                    <div class="bg-slate-950 p-6 sm:p-8 md:p-10 text-white relative overflow-hidden">
+                        <div class="absolute -top-20 -right-20 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
+                        <div class="relative z-10">
+                            <span class="inline-flex items-center rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-2 text-[11px] font-black uppercase tracking-[0.24em] text-emerald-300">Who We Are</span>
+                            <h1 class="mt-5 text-3xl sm:text-4xl md:text-5xl font-black uppercase tracking-tight leading-[0.95]">Built for local cricket, made for real players.</h1>
+                            <p class="mt-4 max-w-xl text-sm sm:text-base leading-7 text-slate-300">Apna Cricket is a simple digital home for tennis cricket across gully, village, and local leagues.</p>
+
+                            <div class="mt-8 rounded-[2rem] border border-white/10 bg-white/5 p-4 sm:p-5">
+                                <img src="ceo.jpg" alt="Founder and CEO Avinash R Huse" onerror="this.onerror=null; this.src='apna.png';" class="w-full max-w-[320px] mx-auto rounded-[1.5rem] object-cover border border-white/10 shadow-[0_20px_40px_rgba(0,0,0,0.25)]">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 sm:p-8 md:p-10">
+                        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 border-b border-slate-200 pb-6">
+                            <div>
+                                <p class="text-xs font-black uppercase tracking-[0.24em] text-slate-400">Founder & CEO</p>
+                                <h2 class="mt-2 text-3xl font-black text-slate-950">Avinash R Huse</h2>
+                                <p class="mt-2 text-sm font-semibold text-emerald-700">Short vision: every local cricketer deserves a big chance.</p>
+                            </div>
+                            <div class="flex flex-wrap gap-3">
+                                <a href="mailto:hello@apnacricket.co.in?subject=Message%20for%20Founder" class="inline-flex items-center justify-center rounded-xl bg-emerald-600 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-emerald-700">Message Founder</a>
+                                <a href="mailto:hello@apnacricket.co.in?subject=Message%20for%20CEO" class="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-white transition hover:bg-slate-800">Message CEO</a>
+                                <a href="https://apnacricket.co.in" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center rounded-xl border border-slate-300 px-4 py-3 text-sm font-black uppercase tracking-[0.14em] text-slate-700 transition hover:bg-slate-50">Visit Site</a>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 grid sm:grid-cols-2 gap-4">
+                            <div class="rounded-2xl bg-slate-50 p-5 border border-slate-200">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">What We Do</p>
+                                <p class="mt-2 text-sm leading-7 text-slate-700">We help local players, teams, and organizers register, play, score live, and grow in one place.</p>
+                            </div>
+                            <div class="rounded-2xl bg-emerald-50 p-5 border border-emerald-100">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Why It Matters</p>
+                                <p class="mt-2 text-sm leading-7 text-emerald-950">Grassroots cricket has talent everywhere. It just needs visibility, structure, and trust.</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 grid sm:grid-cols-2 gap-4">
+                            <div class="rounded-2xl border border-slate-200 p-5">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Address</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-800">Apna Cricket, Deshgavhan, Ambad, Dist. Jalna, MH, India - 431202</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 p-5">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Email</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-800">hello@apnacricket.co.in</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 p-5">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Phone</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-800">+91 9503635007</p>
+                            </div>
+                            <div class="rounded-2xl border border-slate-200 p-5">
+                                <p class="text-xs font-black uppercase tracking-[0.2em] text-slate-400">Location</p>
+                                <p class="mt-2 text-sm font-semibold text-slate-800">Deshgavhan</p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 rounded-[1.75rem] bg-slate-950 p-5 sm:p-6 text-white">
+                            <p class="text-xs font-black uppercase tracking-[0.22em] text-emerald-300">CEO Note</p>
+                            <p class="mt-3 text-sm sm:text-base leading-7 text-slate-200">Apna Cricket is for the real heartbeat of the game. We want every local player to be seen, tracked, and respected with one simple platform.</p>
                         </div>
                     </div>
                 </div>
